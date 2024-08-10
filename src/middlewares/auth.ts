@@ -11,15 +11,18 @@ import { User } from "../modules/user/user.model";
 // auth middleware to verify jweToken
 const auth = (...requiredRoles: TUserRole[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization;
+    let token = req.headers.authorization;
 
     // check if the token is sent from the client
     if (!token) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        "You are not authorized, as not token give"
+        "You are not authorized, as token is not given"
       );
     }
+
+    // split the token and exclude 'Bearer' from the token and take only token part
+    token = token.split(" ")[1];
 
     // check if the token is valid
     const decoded = jwt.verify(

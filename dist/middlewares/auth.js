@@ -22,11 +22,13 @@ const user_model_1 = require("../modules/user/user.model");
 // auth middleware to verify jweToken
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        const token = req.headers.authorization;
+        let token = req.headers.authorization;
         // check if the token is sent from the client
         if (!token) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized, as not token give");
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized, as token is not given");
         }
+        // split the token and exclude 'Bearer' from the token and take only token part
+        token = token.split(" ")[1];
         // check if the token is valid
         const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_secret);
         const { userEmail, role, iat } = decoded;

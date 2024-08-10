@@ -14,11 +14,6 @@ app.use(cors());
 // routes moddleware
 app.use("/api", router);
 
-// base route
-app.use("/", async (req: Request, res: Response) => {
-  res.status(200).json("Car Washing System App is Running");
-});
-
 // not found route
 app.use(notFound);
 
