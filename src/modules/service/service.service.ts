@@ -1,6 +1,7 @@
 import { TService } from "./service.interface";
 import { Service } from "./service.model";
 
+
 // ------------------ create service into db ----------------
 const createServiceIntoDB = async (payload: TService) => {
   const result = await Service.create(payload);

@@ -6,6 +6,8 @@ import validateRequest from "../../middlewares/validateRequestData";
 import { ServiceValidations } from "./service.validation";
 import auth from "../../middlewares/auth";
 import { USER_ROLE } from "../auth/auth.constant";
+import { SlotValidations } from "../slot/slot.validation";
+import { SlotControllers } from "../slot/slot.controller";
 
 const router = express.Router();
 
@@ -32,6 +34,13 @@ router.put(
   auth(USER_ROLE.admin),
   validateRequest(ServiceValidations.updateServiceValidationSchema),
   ServiceControllers.updateService
+);
+
+router.post(
+  "/slots",
+  auth(USER_ROLE.admin),
+  validateRequest(SlotValidations.createSlotValidationSchema),
+  SlotControllers.createSlot
 );
 
 // export routes

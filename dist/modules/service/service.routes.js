@@ -11,6 +11,8 @@ const validateRequestData_1 = __importDefault(require("../../middlewares/validat
 const service_validation_1 = require("./service.validation");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
 const auth_constant_1 = require("../auth/auth.constant");
+const slot_validation_1 = require("../slot/slot.validation");
+const slot_controller_1 = require("../slot/slot.controller");
 const router = express_1.default.Router();
 // create a service
 router.post("/create-service", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(service_validation_1.ServiceValidations.createServiceValidationSchema), service_controller_1.ServiceControllers.createService);
@@ -22,5 +24,6 @@ router.get("/:id", service_controller_1.ServiceControllers.getSingleService);
 router.delete("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), service_controller_1.ServiceControllers.deleteService);
 // update an Service
 router.put("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(service_validation_1.ServiceValidations.updateServiceValidationSchema), service_controller_1.ServiceControllers.updateService);
+router.post("/slots", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(slot_validation_1.SlotValidations.createSlotValidationSchema), slot_controller_1.SlotControllers.createSlot);
 // export routes
 exports.serviceRoutes = router;
