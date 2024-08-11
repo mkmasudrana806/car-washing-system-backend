@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SlotValidations = void 0;
 const zod_1 = __importDefault(require("zod"));
+const booking_constant_1 = require("../booking/booking.constant");
 // HH:MM time format validation
 const timeFormatValidation = zod_1.default
     .string({ required_error: "Time is required" })
@@ -40,7 +41,13 @@ const updateSlotValidationSchema = zod_1.default.object({
         date: zod_1.default.string({ required_error: "date is required" }).optional(),
         startTime: timeFormatValidation.optional(),
         endTime: timeFormatValidation.optional(),
-        isBooked: zod_1.default.enum(["available", "booked", "cancelled"]).optional(),
+        isBooked: zod_1.default
+            .enum([
+            booking_constant_1.BOOKING_TYPE.available,
+            booking_constant_1.BOOKING_TYPE.booked,
+            booking_constant_1.BOOKING_TYPE.cancelled,
+        ])
+            .optional(),
     })
         .refine((body) => {
         if (body.startTime && body.endTime) {

@@ -57,8 +57,8 @@ userSchema.pre("save", function (next) {
     });
 });
 // ****************** statics methods ***************************
-// isUserExistsByEmail method
-userSchema.statics.isUserExistsByEmail = function (email) {
+// isUserExistsByemail method
+userSchema.statics.isUserExistsByemail = function (email) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield exports.User.findOne({ email }).select("+password");
         return result;

@@ -4,6 +4,7 @@ import { Service } from "../service/service.model";
 import { TSlot } from "./slot.interface";
 import { Slot } from "./slot.model";
 import { minuteToTime, timeToMinutes } from "./slot.utils";
+import { BOOKING_TYPE } from "../booking/booking.constant";
 
 // ------------------ create Slot into db ----------------
 const createSlotIntoDB = async (payload: TSlot) => {
@@ -60,7 +61,7 @@ const getAllSlotsFromDB = async () => {
 // ------------------ get available slots ----------------
 const getAvailableSlotsFromDB = async (req: Record<string, unknown>) => {
   // make query for exact matching slots
-  let query: any = { isBooked: "available" };
+  let query: any = { isBooked: BOOKING_TYPE.available };
   if (req?.serviceId) query.service = req.serviceId;
   if (req?.date) query.date = req.date;
 

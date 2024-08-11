@@ -11,7 +11,7 @@ import { TUser } from "../user/user.interface";
 // ----------------- register user into database -----------------------
 const RegisterUserIntoDB = async (payload: TUser) => {
   // check if the user is exists
-  const user = await User.isUserExistsByEmail(payload?.email);
+  const user = await User.isUserExistsByemail(payload?.email);
   if (user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is already exists!");
   }
@@ -23,7 +23,7 @@ const RegisterUserIntoDB = async (payload: TUser) => {
 // ----------------- login user into database -----------------------
 const loginUserIntoDB = async (payload: TLoginUser) => {
   // check if the user is exists
-  const user = await User.isUserExistsByEmail(payload?.email);
+  const user: any = await User.isUserExistsByemail(payload?.email);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
@@ -38,7 +38,11 @@ const loginUserIntoDB = async (payload: TLoginUser) => {
   }
 
   // jwt data
-  const jwtPayload = { userEmail: user?.email, role: user?.role };
+  const jwtPayload = {
+    userId: user?._id,
+    email: user?.email,
+    role: user?.role,
+  };
 
   // access granted: Send AccessToken
   const accessToken = createToken(
@@ -60,7 +64,7 @@ const changePasswordIntoDB = async (
   payload: { oldPassword: string; newPassword: string }
 ) => {
   // check if the user is exists
-  const user = await User.isUserExistsByEmail(userData.userId);
+  const user = await User.isUserExistsByemail(userData.userId);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
@@ -84,7 +88,7 @@ const changePasswordIntoDB = async (
   // update the password
   const result = await User.findOneAndUpdate(
     {
-      email: userData.userEmail,
+      email: userData.email,
       role: userData.role,
     },
     {

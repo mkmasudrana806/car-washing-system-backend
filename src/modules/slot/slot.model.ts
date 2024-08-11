@@ -1,5 +1,6 @@
 import { Schema, model } from "mongoose";
 import { TSlot } from "./slot.interface";
+import { BOOKING_TYPE } from "../booking/booking.constant";
 
 // slot schema
 const slotSchema = new Schema<TSlot>(
@@ -17,7 +18,11 @@ const slotSchema = new Schema<TSlot>(
 
     isBooked: {
       type: String,
-      enum: ["available", "booked", "canceled"],
+      enum: [
+        BOOKING_TYPE.available,
+        BOOKING_TYPE.booked,
+        BOOKING_TYPE.cancelled,
+      ],
       default: "available",
     },
   },

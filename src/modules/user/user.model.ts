@@ -51,8 +51,8 @@ userSchema.pre("save", async function (next) {
 });
 
 // ****************** statics methods ***************************
-// isUserExistsByEmail method
-userSchema.statics.isUserExistsByEmail = async function (email: string) {
+// isUserExistsByemail method
+userSchema.statics.isUserExistsByemail = async function (email: string) {
   const result = await User.findOne({ email }).select("+password");
   return result;
 };

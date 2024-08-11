@@ -1,4 +1,5 @@
 import z from "zod";
+import { BOOKING_TYPE } from "../booking/booking.constant";
 
 // HH:MM time format validation
 const timeFormatValidation = z
@@ -43,7 +44,13 @@ const updateSlotValidationSchema = z.object({
       date: z.string({ required_error: "date is required" }).optional(),
       startTime: timeFormatValidation.optional(),
       endTime: timeFormatValidation.optional(),
-      isBooked: z.enum(["available", "booked", "cancelled"]).optional(),
+      isBooked: z
+        .enum([
+          BOOKING_TYPE.available,
+          BOOKING_TYPE.booked,
+          BOOKING_TYPE.cancelled,
+        ])
+        .optional(),
     })
     .refine(
       (body) => {

@@ -22,7 +22,7 @@ const auth_utils_1 = require("./auth.utils");
 // ----------------- register user into database -----------------------
 const RegisterUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByEmail(payload === null || payload === void 0 ? void 0 : payload.email);
+    const user = yield user_model_1.User.isUserExistsByemail(payload === null || payload === void 0 ? void 0 : payload.email);
     if (user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is already exists!");
     }
@@ -32,7 +32,7 @@ const RegisterUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, functi
 // ----------------- login user into database -----------------------
 const loginUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByEmail(payload === null || payload === void 0 ? void 0 : payload.email);
+    const user = yield user_model_1.User.isUserExistsByemail(payload === null || payload === void 0 ? void 0 : payload.email);
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
@@ -45,7 +45,11 @@ const loginUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function*
         throw new appError_1.default(http_status_1.default.FORBIDDEN, "Password is not matched!");
     }
     // jwt data
-    const jwtPayload = { userEmail: user === null || user === void 0 ? void 0 : user.email, role: user === null || user === void 0 ? void 0 : user.role };
+    const jwtPayload = {
+        userId: user === null || user === void 0 ? void 0 : user._id,
+        email: user === null || user === void 0 ? void 0 : user.email,
+        role: user === null || user === void 0 ? void 0 : user.role,
+    };
     // access granted: Send AccessToken
     const accessToken = (0, auth_utils_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
     return {
@@ -57,7 +61,7 @@ const loginUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function*
 // --------------- change password --------------------
 const changePasswordIntoDB = (userData, payload) => __awaiter(void 0, void 0, void 0, function* () {
     // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByEmail(userData.userId);
+    const user = yield user_model_1.User.isUserExistsByemail(userData.userId);
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
@@ -73,7 +77,7 @@ const changePasswordIntoDB = (userData, payload) => __awaiter(void 0, void 0, vo
     const hashPassword = yield bcrypt_1.default.hash(payload.newPassword, Number(config_1.default.bcrypt_salt_rounds));
     // update the password
     const result = yield user_model_1.User.findOneAndUpdate({
-        email: userData.userEmail,
+        email: userData.email,
         role: userData.role,
     }, {
         password: hashPassword,

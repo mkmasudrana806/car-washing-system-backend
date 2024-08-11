@@ -19,7 +19,7 @@ export type TUserRole = keyof typeof USER_ROLE;
 
 // user model
 export interface IUserModel extends Model<TUser> {
-  isUserExistsByEmail(email: string): Promise<TUser | null>;
+  isUserExistsByemail(email: string): Promise<TUser | null>;
 
   isPasswordMatched(
     plainPassword: string,

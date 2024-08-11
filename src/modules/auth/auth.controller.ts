@@ -19,9 +19,9 @@ const registerUser = catchAsync(async (req, res) => {
 
 // --------------- login an user --------------------
 const loginUser = catchAsync(async (req, res) => {
-  const { user, accessToken, needsPasswordChange } =
-    await authServices.loginUserIntoDB(req.body);
+  const { user, accessToken } = await authServices.loginUserIntoDB(req.body);
 
+  res.cookie("accessToken", accessToken);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

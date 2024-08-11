@@ -18,6 +18,7 @@ const appError_1 = __importDefault(require("../../utils/appError"));
 const service_model_1 = require("../service/service.model");
 const slot_model_1 = require("./slot.model");
 const slot_utils_1 = require("./slot.utils");
+const booking_constant_1 = require("../booking/booking.constant");
 // ------------------ create Slot into db ----------------
 const createSlotIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // const result = await Slot.create(payload);
@@ -57,7 +58,7 @@ const getAllSlotsFromDB = () => __awaiter(void 0, void 0, void 0, function* () {
 // ------------------ get available slots ----------------
 const getAvailableSlotsFromDB = (req) => __awaiter(void 0, void 0, void 0, function* () {
     // make query for exact matching slots
-    let query = { isBooked: "available" };
+    let query = { isBooked: booking_constant_1.BOOKING_TYPE.available };
     if (req === null || req === void 0 ? void 0 : req.serviceId)
         query.service = req.serviceId;
     if (req === null || req === void 0 ? void 0 : req.date)
