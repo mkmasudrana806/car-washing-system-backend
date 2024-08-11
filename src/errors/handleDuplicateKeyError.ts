@@ -1,4 +1,4 @@
-import { TErrorScources, TGenericErrorResponse } from "../interface/error";
+import { TErrorMessages, TGenericErrorResponse } from "../interface/error";
 
 const handleDuplicateKeyError = (err: any): TGenericErrorResponse => {
   // extract value within double quotes using regex
@@ -6,18 +6,18 @@ const handleDuplicateKeyError = (err: any): TGenericErrorResponse => {
 
   // extracted value will be in the first capturing group
   const extracted_message = match && match[1];
-  const errorSources: TErrorScources = [
+  const errorMessages: TErrorMessages = [
     {
       path: "",
       message: `${extracted_message} is already exists`,
     },
   ];
 
-  const statusCode = 400;
+  const statusCode = 401;
   return {
     message: "duplicate key error",
     statusCode,
-    errorSources,
+    errorMessages,
   };
 };
 

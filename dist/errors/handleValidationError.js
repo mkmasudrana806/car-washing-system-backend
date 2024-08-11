@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const handleValidationError = (err) => {
-    const statusCode = 400;
-    const errorSources = Object.values(err.errors).map((val) => {
+    const statusCode = 401;
+    const errorMessages = Object.values(err.errors).map((val) => {
         return {
             path: val === null || val === void 0 ? void 0 : val.path,
             message: val === null || val === void 0 ? void 0 : val.message,
@@ -11,7 +11,7 @@ const handleValidationError = (err) => {
     return {
         statusCode,
         message: "mongoose validation error",
-        errorSources,
+        errorMessages,
     };
 };
 exports.default = handleValidationError;

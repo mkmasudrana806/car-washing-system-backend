@@ -8,7 +8,7 @@ import { TUserRole } from "../modules/user/user.interface";
 import { User } from "../modules/user/user.model";
 
 //middleware: client -> route -> auth -> zod validation -> controller -> service
-// auth middleware to verify jweToken
+// auth middleware to verify jweToken and role
 const auth = (...requiredRoles: TUserRole[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     let token = req.headers.authorization;
@@ -17,7 +17,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
     if (!token) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        "You are not authorized, as token is not given"
+        "You have no access to this route"
       );
     }
 
@@ -52,7 +52,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
     ) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        "You are not authorized, your token is invalid!"
+        "You have no access to this route"
       );
     }
 
@@ -60,7 +60,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
     if (requiredRoles.length > 0 && !requiredRoles?.includes(role)) {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
-        "You are not authorized, as required role is not matches"
+        "You have no access to this route"
       );
     }
     req.user = decoded as JwtPayload;

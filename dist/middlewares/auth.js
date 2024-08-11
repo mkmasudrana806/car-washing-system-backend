@@ -19,13 +19,13 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = __importDefault(require("../app/config"));
 const user_model_1 = require("../modules/user/user.model");
 //middleware: client -> route -> auth -> zod validation -> controller -> service
-// auth middleware to verify jweToken
+// auth middleware to verify jweToken and role
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         let token = req.headers.authorization;
         // check if the token is sent from the client
         if (!token) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized, as token is not given");
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You have no access to this route");
         }
         // split the token and exclude 'Bearer' from the token and take only token part
         token = token.split(" ")[1];
@@ -43,11 +43,11 @@ const auth = (...requiredRoles) => {
         }
         if (user.passwordChangedAt &&
             user_model_1.User.isJWTIssuedBeforePasswordChange(user.passwordChangedAt, iat)) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized, your token is invalid!");
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You have no access to this route");
         }
         // check if the user is authorized access
         if (requiredRoles.length > 0 && !(requiredRoles === null || requiredRoles === void 0 ? void 0 : requiredRoles.includes(role))) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized, as required role is not matches");
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You have no access to this route");
         }
         req.user = decoded;
         next();

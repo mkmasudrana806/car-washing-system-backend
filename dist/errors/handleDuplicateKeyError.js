@@ -5,17 +5,17 @@ const handleDuplicateKeyError = (err) => {
     const match = err.message.match(/"([^"]*)"/);
     // extracted value will be in the first capturing group
     const extracted_message = match && match[1];
-    const errorSources = [
+    const errorMessages = [
         {
             path: "",
             message: `${extracted_message} is already exists`,
         },
     ];
-    const statusCode = 400;
+    const statusCode = 401;
     return {
         message: "duplicate key error",
         statusCode,
-        errorSources,
+        errorMessages,
     };
 };
 exports.default = handleDuplicateKeyError;

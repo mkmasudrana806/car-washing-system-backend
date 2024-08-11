@@ -1,4 +1,5 @@
 import { Response } from "express";
+import httpStatus from "http-status";
 
 type TResponse<T> = {
   success: boolean;
@@ -9,10 +10,20 @@ type TResponse<T> = {
 };
 
 const sendResponse = <T>(res: Response, data: TResponse<T>) => {
+  // check if data exists
+  let hasData: boolean = true;
+  if (
+    (Array.isArray(data.data) && data.data.length === 0) ||
+    JSON.stringify(data.data) == "{}"
+  ) {
+    hasData = false;
+  }
+
+  // send response based on 'hasData' status flag
   res.status(data?.statusCode).json({
-    success: data.success,
-    statusCode: data.statusCode,
-    message: data.message,
+    success: hasData ? data.success : false,
+    statusCode: hasData ? data.statusCode : httpStatus.NOT_FOUND,
+    message: hasData ? data.message : "Data not found",
     token: data?.token,
     data: data.data,
   });
