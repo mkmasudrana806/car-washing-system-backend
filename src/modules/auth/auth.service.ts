@@ -27,6 +27,7 @@ const loginUserIntoDB = async (payload: TLoginUser) => {
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
+  console.log(user);
   // check if the user is already deleted
   if (user?.isDeleted) {
     throw new AppError(httpStatus.FORBIDDEN, "User is already deleted!");
@@ -64,7 +65,7 @@ const changePasswordIntoDB = async (
   payload: { oldPassword: string; newPassword: string }
 ) => {
   // check if the user is exists
-  const user = await User.isUserExistsByemail(userData.userId);
+  const user = await User.isUserExistsByemail(userData.email);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
@@ -96,7 +97,7 @@ const changePasswordIntoDB = async (
       needsPasswordChange: false,
       passwordChangedAt: new Date(),
     },
-    { new: true }
+    { new: true, runValidators: true }
   );
 
   return result;

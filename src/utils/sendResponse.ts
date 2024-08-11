@@ -14,7 +14,8 @@ const sendResponse = <T>(res: Response, data: TResponse<T>) => {
   let hasData: boolean = true;
   if (
     (Array.isArray(data.data) && data.data.length === 0) ||
-    JSON.stringify(data.data) == "{}"
+    JSON.stringify(data.data) == "{}" ||
+    data.data === null
   ) {
     hasData = false;
   }

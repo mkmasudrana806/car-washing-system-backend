@@ -1,6 +1,9 @@
+import httpStatus from "http-status";
+import AppError from "../../utils/appError";
 import { TUser } from "./user.interface";
 import { User } from "./user.model";
 
+// ****************** Additional Routes ************************
 // ------------------ get all users from db ----------------
 const getAllUsersFromDB = async () => {
   const result = await User.find({});
@@ -25,7 +28,26 @@ const deleteUserFromDB = async (id: string) => {
 
 // ------------------ update an user into db ----------------
 const updateUserIntoDB = async (id: string, payload: Partial<TUser>) => {
-  const result = await User.findByIdAndUpdate(id, payload, { new: true });
+  // Allowed fields to update data
+  const allowedFields: (keyof TUser)[] = ["name", "phone", "address"];
+
+  // Filter payload to only include allowed fields
+  const updateData: Record<string, unknown> = {};
+  allowedFields.forEach((field) => {
+    if (payload[field] !== undefined) {
+      updateData[field] = payload[field];
+    }
+  });
+
+  // Check if user exists and is not deleted
+  if (!(await User.isUserExistsById(id))) {
+    throw new AppError(httpStatus.NOT_FOUND, "User is not found");
+  }
+ 
+  const result = await User.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true, // Run mongoose schema validation before updating new data
+  });
   return result;
 };
 

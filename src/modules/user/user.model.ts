@@ -2,6 +2,8 @@ import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { IUserModel, TUser } from "./user.interface";
 import config from "../../app/config";
+import AppError from "../../utils/appError";
+import httpStatus from "http-status";
 
 // user schema
 const userSchema = new Schema<TUser, IUserModel>(
@@ -37,8 +39,6 @@ const userSchema = new Schema<TUser, IUserModel>(
 );
 
 // *************** document middleware start **************
-// this pre.save event will called before save document into database. we can do anything before save document into database
-// pre save middleware / hook: will work on create() or save() method
 userSchema.pre("save", async function (next) {
   // hassing password and save into DB
   const user = this;
@@ -54,6 +54,14 @@ userSchema.pre("save", async function (next) {
 // isUserExistsByemail method
 userSchema.statics.isUserExistsByemail = async function (email: string) {
   const result = await User.findOne({ email }).select("+password");
+  return result;
+};
+// isUserExistsById find by mongoose _id
+userSchema.statics.isUserExistsById = async function (_id: string) {
+  const result = await User.findById(_id).select("+password");
+  if (result?.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User is already deleted");
+  }
   return result;
 };
 
@@ -80,18 +88,6 @@ userSchema.statics.isJWTIssuedBeforePasswordChange = function (
 // set empty string after saving password
 userSchema.post("save", function (doc) {
   doc.password = "";
-});
-
-// *************** query middleware start **************
-userSchema.pre("find", function (next) {
-  this.findOne({ isDeleted: { $ne: true } });
-  next();
-});
-
-userSchema.pre("findOne", function (next) {
-  // filter out data which is deleted true
-  this.find({ isDeleted: { $ne: true } });
-  next();
 });
 
 // user model export

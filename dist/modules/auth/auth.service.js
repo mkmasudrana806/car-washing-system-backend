@@ -36,6 +36,7 @@ const loginUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function*
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
+    console.log(user);
     // check if the user is already deleted
     if (user === null || user === void 0 ? void 0 : user.isDeleted) {
         throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
@@ -61,7 +62,7 @@ const loginUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function*
 // --------------- change password --------------------
 const changePasswordIntoDB = (userData, payload) => __awaiter(void 0, void 0, void 0, function* () {
     // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByemail(userData.userId);
+    const user = yield user_model_1.User.isUserExistsByemail(userData.email);
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
@@ -83,7 +84,7 @@ const changePasswordIntoDB = (userData, payload) => __awaiter(void 0, void 0, vo
         password: hashPassword,
         needsPasswordChange: false,
         passwordChangedAt: new Date(),
-    }, { new: true });
+    }, { new: true, runValidators: true });
     return result;
 });
 exports.authServices = {

@@ -21,6 +21,7 @@ const registerUser = catchAsync(async (req, res) => {
 const loginUser = catchAsync(async (req, res) => {
   const { user, accessToken } = await authServices.loginUserIntoDB(req.body);
 
+  // set access token to cookie memory
   res.cookie("accessToken", accessToken);
   sendResponse(res, {
     statusCode: httpStatus.OK,

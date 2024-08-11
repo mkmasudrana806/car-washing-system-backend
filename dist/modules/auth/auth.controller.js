@@ -30,6 +30,7 @@ const registerUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
 // --------------- login an user --------------------
 const loginUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { user, accessToken } = yield auth_service_1.authServices.loginUserIntoDB(req.body);
+    // set access token to cookie memory
     res.cookie("accessToken", accessToken);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,

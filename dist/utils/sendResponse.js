@@ -8,7 +8,8 @@ const sendResponse = (res, data) => {
     // check if data exists
     let hasData = true;
     if ((Array.isArray(data.data) && data.data.length === 0) ||
-        JSON.stringify(data.data) == "{}") {
+        JSON.stringify(data.data) == "{}" ||
+        data.data === null) {
         hasData = false;
     }
     // send response based on 'hasData' status flag

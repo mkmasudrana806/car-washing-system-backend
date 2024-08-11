@@ -16,6 +16,8 @@ exports.User = void 0;
 const mongoose_1 = require("mongoose");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const config_1 = __importDefault(require("../../app/config"));
+const appError_1 = __importDefault(require("../../utils/appError"));
+const http_status_1 = __importDefault(require("http-status"));
 // user schema
 const userSchema = new mongoose_1.Schema({
     name: { type: String, required: true },
@@ -46,8 +48,6 @@ const userSchema = new mongoose_1.Schema({
     timestamps: true,
 });
 // *************** document middleware start **************
-// this pre.save event will called before save document into database. we can do anything before save document into database
-// pre save middleware / hook: will work on create() or save() method
 userSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         // hassing password and save into DB
@@ -61,6 +61,16 @@ userSchema.pre("save", function (next) {
 userSchema.statics.isUserExistsByemail = function (email) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield exports.User.findOne({ email }).select("+password");
+        return result;
+    });
+};
+// isUserExistsById find by mongoose _id
+userSchema.statics.isUserExistsById = function (_id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield exports.User.findById(_id).select("+password");
+        if (result === null || result === void 0 ? void 0 : result.isDeleted) {
+            throw new appError_1.default(http_status_1.default.BAD_REQUEST, "User is already deleted");
+        }
         return result;
     });
 };
@@ -80,16 +90,6 @@ userSchema.statics.isJWTIssuedBeforePasswordChange = function (passwordChangedTi
 // set empty string after saving password
 userSchema.post("save", function (doc) {
     doc.password = "";
-});
-// *************** query middleware start **************
-userSchema.pre("find", function (next) {
-    this.findOne({ isDeleted: { $ne: true } });
-    next();
-});
-userSchema.pre("findOne", function (next) {
-    // filter out data which is deleted true
-    this.find({ isDeleted: { $ne: true } });
-    next();
 });
 // user model export
 exports.User = (0, mongoose_1.model)("User", userSchema);

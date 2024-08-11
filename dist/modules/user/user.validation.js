@@ -12,7 +12,7 @@ const createUserValidationSchema = zod_1.default.object({
         email: zod_1.default
             .string({ required_error: "email is required" })
             .email("Please enter a valid email address"),
-        password: zod_1.default.string().optional(),
+        password: zod_1.default.string({ required_error: "password is required" }),
         phone: zod_1.default.string({ required_error: "phone is required" }),
         address: zod_1.default.string({ required_error: "address is required" }),
     }),
@@ -20,12 +20,7 @@ const createUserValidationSchema = zod_1.default.object({
 // update user validation schema
 const updateUserValidationSchema = zod_1.default.object({
     body: zod_1.default.object({
-        name: zod_1.default.string({ required_error: "name is required" }),
-        email: zod_1.default
-            .string({ required_error: "email is required" })
-            .email("Please enter a valid email address")
-            .optional(),
-        password: zod_1.default.string().optional(),
+        name: zod_1.default.string({ required_error: "name is required" }).optional(),
         phone: zod_1.default.string({ required_error: "phone is required" }).optional(),
         address: zod_1.default.string({ required_error: "address is required" }).optional(),
     }),
