@@ -3,7 +3,6 @@ import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { authServices } from "./auth.service";
 import { JwtPayload } from "jsonwebtoken";
-import config from "../../app/config";
 
 // --------------- register or signup an user --------------------
 const registerUser = catchAsync(async (req, res) => {
@@ -12,7 +11,7 @@ const registerUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "User is registered successfully",
+    message: "User registered successfully",
     data: result,
   });
 });
@@ -26,7 +25,7 @@ const loginUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "User is logged in successfully",
+    message: "User logged in successfully",
     token: accessToken,
     data: user,
   });

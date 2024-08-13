@@ -7,7 +7,8 @@ import catchAsync from "../../utils/catchAsync";
 
 // ------------------ get all users ------------------
 const getAllUsers = catchAsync(async (req, res) => {
-  const result = await UserServices.getAllUsersFromDB();
+  const userRole = req.user;
+  const result = await UserServices.getAllUsersFromDB(userRole, req.query);
 
   sendResponse(res, {
     success: true,

@@ -51,12 +51,21 @@ userSchema.pre("save", async function (next) {
 });
 
 // ****************** statics methods ***************************
-// isUserExistsByemail method
+
+/**
+ * @param email email address of an user
+ * @returns return user data found by email address
+ */
 userSchema.statics.isUserExistsByemail = async function (email: string) {
   const result = await User.findOne({ email }).select("+password");
   return result;
 };
-// isUserExistsById find by mongoose _id
+
+/**
+ * @param _id user id provided mongodb
+ * @validation if user is deleted, throw an error
+ * @returns return user data if it's not deleted
+ */
 userSchema.statics.isUserExistsById = async function (_id: string) {
   const result = await User.findById(_id).select("+password");
   if (result?.isDeleted) {
@@ -65,7 +74,11 @@ userSchema.statics.isUserExistsById = async function (_id: string) {
   return result;
 };
 
-// isPasswordMatched
+/**
+ * @param plain user password passed from client
+ * @param hash hashed password of an user found in the database
+ * @returns return true if password matches, false otherwise
+ */
 userSchema.statics.isPasswordMatched = async function (
   plain: string,
   hash: string
@@ -75,6 +88,12 @@ userSchema.statics.isPasswordMatched = async function (
 };
 
 // jwt invalidates
+/**
+ *
+ * @param passwordChangedTimestamp last password change timestamp of an user
+ * @param jwtIssuedtimestamp // jwt issued timestamp of an authenticated user. iat timestamp
+ * @returns return true if isJWTIssuedBeforePasswordChange true, false otherwise
+ */
 userSchema.statics.isJWTIssuedBeforePasswordChange = function (
   passwordChangedTimestamp: Date,
   jwtIssuedtimestamp: number
@@ -86,6 +105,7 @@ userSchema.statics.isJWTIssuedBeforePasswordChange = function (
 };
 
 // set empty string after saving password
+// set password to empty string before send response to client
 userSchema.post("save", function (doc) {
   doc.password = "";
 });

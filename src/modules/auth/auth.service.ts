@@ -8,7 +8,13 @@ import config from "../../app/config";
 import { createToken } from "./auth.utils";
 import { TUser } from "../user/user.interface";
 
-// ----------------- register user into database -----------------------
+/**
+ * ----------------- register user into database -----------------------
+ *
+ * @param payload new user data
+ * @validation check if user is already registered by the same email address
+ * @returns return registered user
+ */
 const RegisterUserIntoDB = async (payload: TUser) => {
   // check if the user is exists
   const user = await User.isUserExistsByemail(payload?.email);
@@ -20,14 +26,20 @@ const RegisterUserIntoDB = async (payload: TUser) => {
   return result;
 };
 
-// ----------------- login user into database -----------------------
+/**
+ * ----------------- login user into database -----------------------
+ *
+ * @param payload user login information ( email and password )
+ * @validation check if user is exists and not deleted and password is correct
+ * @returns return new user info and access token
+ */
 const loginUserIntoDB = async (payload: TLoginUser) => {
   // check if the user is exists
   const user: any = await User.isUserExistsByemail(payload?.email);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
-  console.log(user);
+
   // check if the user is already deleted
   if (user?.isDeleted) {
     throw new AppError(httpStatus.FORBIDDEN, "User is already deleted!");
@@ -55,11 +67,17 @@ const loginUserIntoDB = async (payload: TLoginUser) => {
   return {
     user,
     accessToken,
-    needsPasswordChange: user?.needsPasswordChange,
   };
 };
 
 // --------------- change password --------------------
+/**
+ *
+ * @param userData jwt user data
+ * @param payload old and new password data
+ * @validations check if user is exists and not deleted and password is correct
+ * @returns return updated user information
+ */
 const changePasswordIntoDB = async (
   userData: JwtPayload,
   payload: { oldPassword: string; newPassword: string }
