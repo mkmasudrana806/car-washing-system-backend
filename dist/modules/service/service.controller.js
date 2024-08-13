@@ -23,17 +23,17 @@ const createService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Service is created successfully",
+        message: "Service created successfully",
         data: result,
     });
 }));
 // ------------------ get all Services ------------------
 const getAllServices = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield service_service_1.ServiceServices.getAllServicesFromDB();
+    const result = yield service_service_1.ServiceServices.getAllServicesFromDB(req.query);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "All Services are retrived successfully",
+        message: "Services retrieved successfully",
         data: result,
     });
 }));
@@ -43,7 +43,7 @@ const getSingleService = (0, catchAsync_1.default)((req, res) => __awaiter(void 
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Service is retrived successfully",
+        message: "Service retrived successfully",
         data: result,
     });
 }));
@@ -53,7 +53,7 @@ const deleteService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Service is deleted successfully",
+        message: "Service deleted successfully",
         data: result,
     });
 }));
@@ -63,7 +63,7 @@ const updateService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Service is updated successfully",
+        message: "Service updated successfully",
         data: result,
     });
 }));

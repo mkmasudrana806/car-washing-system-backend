@@ -15,13 +15,13 @@ const createServiceValidationSchema = zod_1.default.object({
             required_error: "price is required",
             invalid_type_error: "price must in integer nonnegative number",
         })
-            .nonnegative(),
+            .nonnegative("price must not be negative"),
         duration: zod_1.default
             .number({
             required_error: "duration is required",
             invalid_type_error: "duration must in integer nonnegative number",
         })
-            .nonnegative(),
+            .nonnegative("duration must not be negative"),
     }),
 });
 // update service validation schema
@@ -36,14 +36,14 @@ const updateServiceValidationSchema = zod_1.default.object({
             required_error: "price is required",
             invalid_type_error: "price must in in integer nonnegative number",
         })
-            .nonnegative()
+            .nonnegative("price must not be negative")
             .optional(),
         duration: zod_1.default
             .number({
             required_error: "duration is required",
             invalid_type_error: "duration must in in integer nonnegative number",
         })
-            .nonnegative()
+            .nonnegative("duration must not be negative")
             .optional(),
     }),
 });

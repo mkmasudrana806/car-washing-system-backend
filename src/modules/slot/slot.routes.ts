@@ -1,5 +1,5 @@
 // handle all Slot routes
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import { SlotControllers } from "./slot.controller";
 
 import validateRequest from "../../middlewares/validateRequestData";
@@ -28,14 +28,6 @@ router.get("/:id", SlotControllers.getSingleSlot);
 
 // delete an Slot
 router.delete("/:id", auth(USER_ROLE.admin), SlotControllers.deleteSlot);
-
-// update an Slot
-router.put(
-  "/:id",
-  auth(USER_ROLE.admin),
-  validateRequest(SlotValidations.updateSlotValidationSchema),
-  SlotControllers.updateSlot
-);
 
 // export routes
 export const slotRoutes = router;

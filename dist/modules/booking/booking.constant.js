@@ -16,5 +16,5 @@ exports.VEHICLE_TYPE = [
 exports.BOOKING_TYPE = {
     available: "available",
     booked: "booked",
-    cancelled: "cancelled",
+    cancelled: "canceled",
 };

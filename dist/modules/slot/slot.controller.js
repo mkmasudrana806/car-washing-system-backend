@@ -23,7 +23,7 @@ const createSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Slot is created successfully",
+        message: "Slots created successfully",
         data: result,
     });
 }));
@@ -33,7 +33,7 @@ const getAvailableSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
-        message: "Slots are retrieved successfully",
+        message: "Available slots retrieved successfully",
         data: result,
     });
 }));
@@ -67,16 +67,6 @@ const deleteSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         data: result,
     });
 }));
-// ------------------ update an Slot ------------------
-const updateSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield slot_service_1.SlotServices.updateSlotIntoDB(req.params.id, req.body);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.OK,
-        message: "Slot is updated successfully",
-        data: result,
-    });
-}));
 // export all Slots controllers
 exports.SlotControllers = {
     createSlot,
@@ -84,5 +74,4 @@ exports.SlotControllers = {
     getAvailableSlots,
     getSingleSlot,
     deleteSlot,
-    updateSlot,
 };

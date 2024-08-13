@@ -1,5 +1,5 @@
 // handle all Service routes
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import { ServiceControllers } from "./service.controller";
 
 import validateRequest from "../../middlewares/validateRequestData";

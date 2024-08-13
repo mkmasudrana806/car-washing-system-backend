@@ -14,5 +14,5 @@ export const VEHICLE_TYPE = [
 export const BOOKING_TYPE = {
   available: "available",
   booked: "booked",
-  cancelled: "cancelled",
+  cancelled: "canceled",
 };

@@ -3,20 +3,53 @@ import AppError from "../../utils/appError";
 import { Service } from "../service/service.model";
 import { TSlot } from "./slot.interface";
 import { Slot } from "./slot.model";
-import { minuteToTime, timeToMinutes } from "./slot.utils";
+import { isSlotConflict, minuteToTime, timeToMinutes } from "./slot.utils";
 import { BOOKING_TYPE } from "../booking/booking.constant";
 
-// ------------------ create Slot into db ----------------
+/**
+ * ------------------ create Slot into db ----------------
+ *
+ * @param payload data for creating a new slot
+ * @validation slots for same service, two times not possible for same date
+ * @validation slots for different service, overlap is not possible for the same date
+ * @returns newly created all slots
+ *
+ */
 const createSlotIntoDB = async (payload: TSlot) => {
-  // const result = await Slot.create(payload);
-  const service = await Service.findById(payload.service);
+  // check if service is exists
+  const service = await Service.isServicExistsById(String(payload.service));
 
-  // convert start and end time to minutes
-  const startTime = timeToMinutes(payload.startTime);
-  const endTime = timeToMinutes(payload.endTime);
+  if (!service) {
+    throw new AppError(httpStatus.NOT_FOUND, "Service is not found");
+  }
+
+  // slots for same service not allowed at the same date
+  const isSameDateExistsForService = await Slot.findOne({
+    service: payload.service,
+    date: payload.date,
+  });
+  if (isSameDateExistsForService) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "slots for same service not allowed at the same date"
+    );
+  }
+
+  // check if the new service's slots has time conflict with the existing slots for the same date
+  const isConflict = await isSlotConflict(payload);
+  if (isConflict) {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      `Time confliction for these slots: ${isConflict} `
+    );
+  }
+
+  // convert start and end time to minutes for new slots
+  const newStartTime = timeToMinutes(payload.startTime);
+  const newEndTime = timeToMinutes(payload.endTime);
 
   // calculate start and end time difference
-  const totalMinutes = endTime - startTime;
+  const totalMinutes = newEndTime - newStartTime;
 
   if (totalMinutes < Number(service?.duration)) {
     throw new AppError(
@@ -31,7 +64,7 @@ const createSlotIntoDB = async (payload: TSlot) => {
   // make new slots array to insert into database
   const newSlots = [];
 
-  let currentStartTime = startTime;
+  let currentStartTime = newStartTime;
   for (let i = 0; i < slots; i++) {
     const slotStartTime = minuteToTime(currentStartTime);
     const slotEndTime = minuteToTime(
@@ -39,7 +72,7 @@ const createSlotIntoDB = async (payload: TSlot) => {
     );
 
     newSlots.push({
-      service: payload.service,
+      service: payload?.service,
       date: payload?.date,
       startTime: slotStartTime,
       endTime: slotEndTime,
@@ -52,39 +85,119 @@ const createSlotIntoDB = async (payload: TSlot) => {
   return result;
 };
 
-// ------------------ get all Slots from db ----------------
+/**
+ * ------------------ get all Slots from db ----------------
+ *
+ * @returns all slots as group with corresponding service details and total slots count.
+ * also filter out those slots, those corresponding service isDeleted false
+ */
 const getAllSlotsFromDB = async () => {
-  const result = await Slot.find({});
+  // group by service. each service details and total slots with count
+  const result = await Slot.aggregate([
+    {
+      // group by service, count and corresponding slots
+      $group: {
+        _id: "$service",
+        count: { $sum: 1 }, // count no of slots in each group
+        slots: { $push: "$$ROOT" }, // collect all slots for each service
+      },
+    },
+    {
+      // join services collection to find out service details
+      $lookup: {
+        from: "services", // The collection name where the service data is stored
+        localField: "_id", // as we store 'service' into _id
+        foreignField: "_id",
+        as: "serviceDetails", // The field name where the populated service data will be stored
+      },
+    },
+    {
+      $match: { "serviceDetails.isDeleted": false }, // keep only document that isDeleted false
+    },
+  ]);
+
   return result;
 };
 
-// ------------------ get available slots ----------------
+/**
+ * ------------------ get available slots ----------------
+ *
+ * @param req request object, it holds query parameters serviceId and date of a slot
+ * @validation keep only slots, those service isDeleted false
+ * @returns all the available slots with corresponding service details
+ */
 const getAvailableSlotsFromDB = async (req: Record<string, unknown>) => {
   // make query for exact matching slots
   let query: any = { isBooked: BOOKING_TYPE.available };
   if (req?.serviceId) query.service = req.serviceId;
   if (req?.date) query.date = req.date;
 
-  console.log(query);
-  const result = await Slot.find(query).populate("service");
-  return result;
+  const result = await Slot.aggregate([
+    // exact matching slots
+    {
+      $match: query,
+    },
+    // populate
+    {
+      $lookup: {
+        from: "services",
+        localField: "service",
+        foreignField: "_id",
+        as: "service",
+      },
+    },
+    // service array to object mapping
+    {
+      $unwind: "$service",
+    },
+    // again filter slots based on service isDeleted false
+    {
+      $match: {
+        "service.isDeleted": false,
+      },
+    },
+  ]);
+
+  return result.length;
 };
 
-// ------------------ get single Slot from db ----------------
+/**
+ * ------------------ get single Slot from db ----------------
+ *
+ * @param id slot id provided by mongodb
+ * @validation throw an error if corresponding service is deleted of the requested slot
+ * @returns single slot
+ */
 const getSingleSlotFromDB = async (id: string) => {
-  const result = await Slot.findById(id);
+  let result = (await Slot.findById(id).populate("service")) as any;
+
+  // throw an error is service is deleted of the requested slot
+  if (result?.service.isDeleted) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Slot is not available, because corresponding service is deleted"
+    );
+  }
   return result;
 };
 
-// ------------------ delete an Slot from db ----------------
+/**
+ *  ------------------ delete an Slot from db ----------------
+ *
+ * @param id slot id provided by mongodb
+ * @validations don't delete a slot if it is already booked
+ * @returns deleted slot
+ */
 const deleteSlotFromDB = async (id: string) => {
+  // check if slot is already booked
+  const slot = await Slot.findById(id);
+  if (slot?.isBooked === BOOKING_TYPE.booked) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You can not delete this slot, as it is already booked!"
+    );
+  }
   const result = await Slot.findByIdAndDelete(id, { new: true });
-  return result;
-};
-
-// ------------------ update an Slot into db ----------------
-const updateSlotIntoDB = async (id: string, payload: Partial<TSlot>) => {
-  const result = await Slot.findByIdAndUpdate(id, payload, { new: true });
   return result;
 };
 
@@ -94,5 +207,4 @@ export const SlotServices = {
   getAvailableSlotsFromDB,
   getSingleSlotFromDB,
   deleteSlotFromDB,
-  updateSlotIntoDB,
 };

@@ -10,19 +10,19 @@ const createService = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Service is created successfully",
+    message: "Service created successfully",
     data: result,
   });
 });
 
 // ------------------ get all Services ------------------
 const getAllServices = catchAsync(async (req, res) => {
-  const result = await ServiceServices.getAllServicesFromDB();
+  const result = await ServiceServices.getAllServicesFromDB(req.query);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "All Services are retrived successfully",
+    message: "Services retrieved successfully",
     data: result,
   });
 });
@@ -34,7 +34,7 @@ const getSingleService = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Service is retrived successfully",
+    message: "Service retrived successfully",
     data: result,
   });
 });
@@ -46,7 +46,7 @@ const deleteService = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Service is deleted successfully",
+    message: "Service deleted successfully",
     data: result,
   });
 });
@@ -61,7 +61,7 @@ const updateService = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Service is updated successfully",
+    message: "Service updated successfully",
     data: result,
   });
 });

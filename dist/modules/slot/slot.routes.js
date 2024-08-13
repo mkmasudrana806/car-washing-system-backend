@@ -22,7 +22,5 @@ router.get("/availability", slot_controller_1.SlotControllers.getAvailableSlots)
 router.get("/:id", slot_controller_1.SlotControllers.getSingleSlot);
 // delete an Slot
 router.delete("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), slot_controller_1.SlotControllers.deleteSlot);
-// update an Slot
-router.put("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(slot_validation_1.SlotValidations.updateSlotValidationSchema), slot_controller_1.SlotControllers.updateSlot);
 // export routes
 exports.slotRoutes = router;

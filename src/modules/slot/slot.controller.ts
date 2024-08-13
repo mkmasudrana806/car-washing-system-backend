@@ -1,7 +1,6 @@
 import sendResponse from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import catchAsync from "../../utils/catchAsync";
-import { Slot } from "./slot.model";
 import { SlotServices } from "./slot.service";
 
 // ------------------ create a Slot ------------------
@@ -11,7 +10,7 @@ const createSlot = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Slot is created successfully",
+    message: "Slots created successfully",
     data: result,
   });
 });
@@ -23,7 +22,7 @@ const getAvailableSlots = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    message: "Slots are retrieved successfully",
+    message: "Available slots retrieved successfully",
     data: result,
   });
 });
@@ -64,17 +63,6 @@ const deleteSlot = catchAsync(async (req, res) => {
   });
 });
 
-// ------------------ update an Slot ------------------
-const updateSlot = catchAsync(async (req, res) => {
-  const result = await SlotServices.updateSlotIntoDB(req.params.id, req.body);
-
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    message: "Slot is updated successfully",
-    data: result,
-  });
-});
 
 // export all Slots controllers
 export const SlotControllers = {
@@ -83,5 +71,4 @@ export const SlotControllers = {
   getAvailableSlots,
   getSingleSlot,
   deleteSlot,
-  updateSlot,
 };
