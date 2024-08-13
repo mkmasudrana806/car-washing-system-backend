@@ -9,6 +9,12 @@ import { User } from "../modules/user/user.model";
 
 //middleware: client -> route -> auth -> zod validation -> controller -> service
 // auth middleware to verify jweToken and role
+/**
+ *
+ * @param requiredRoles role like 'user', 'admin'
+ * @validation check token is sent and valid. user is exists, not deleted, jwt validation and user role authorization
+ * @returns return next() middleware
+ */
 const auth = (...requiredRoles: TUserRole[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     let token = req.headers.authorization;

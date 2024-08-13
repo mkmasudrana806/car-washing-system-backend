@@ -9,13 +9,19 @@ type TResponse<T> = {
   data: T;
 };
 
+/**
+ *
+ * @param res res object
+ * @param data data. it can be array, null, empty object or anything
+ */
 const sendResponse = <T>(res: Response, data: TResponse<T>) => {
   // check if data exists
   let hasData: boolean = true;
   if (
     (Array.isArray(data.data) && data.data.length === 0) ||
     JSON.stringify(data.data) == "{}" ||
-    data.data === null
+    data.data === null ||
+    data.data == undefined
   ) {
     hasData = false;
   }
