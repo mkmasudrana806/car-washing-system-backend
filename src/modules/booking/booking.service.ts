@@ -7,76 +7,8 @@ import { Service } from "../service/service.model";
 import { Slot } from "../slot/slot.model";
 import httpStatus from "http-status";
 import { BOOKING_TYPE, bookingsSearchableFields } from "./booking.constant";
+import mongoose from "mongoose";
 
-// ------------------ create Booking into db ----------------
-//TODO: before production, uncomment below function for transaction
-// const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
-//   // check if user is exists
-//   const userExists: any = await User.isUserExistsByemail(user?.email);
-//   if (!userExists) {
-//     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
-//   }
-//   payload.customer = userExists._id;
-
-//   // check is service is exists
-//   const service = await Service.findById(payload.service);
-//   if (!service) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Service is not found!");
-//   }
-
-//   // check if the slot is exists
-//   const slot = await Slot.findById(payload.slot);
-//   if (!slot) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Slot is not found!");
-//   }
-
-//   // check if the slot is available
-//   if (slot.isBooked !== BOOKING_TYPE.available) {
-//     throw new AppError(httpStatus.BAD_REQUEST, "Slot is not available");
-//   }
-
-//   // check if service is belong to that slot
-//   if (String(slot.service) !== String(payload.service)) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       "this service is not belong to that slot!"
-//     );
-//   }
-
-//   const session = await mongoose.startSession();
-//   try {
-//     session.startTransaction();
-//     // make that slot to booked
-//     const booking = await Slot.findByIdAndUpdate(
-//       payload.slot,
-//       { isBooked: "booked" },
-//       { new: true, session }
-//     );
-
-//     if (booking?.isBooked !== BOOKING_TYPE.booked) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Unable to booked this slot!");
-//     }
-
-//     // booking a new service
-//     const result = await Booking.create([payload], { session });
-//     if (result.length === 0) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Faild to booked a service");
-//     }
-
-//     return {
-//       customer: userExists,
-//       service: service,
-//       slot: slot,
-//       vehicleType: result[0].vehicleType,
-//       vehicleBrand: result[0].vehicleBrand,
-//       vehicleModel: result[0].vehicleModel,
-//       manufacturingYear: result[0].manufacturingYear,
-//       registrationPlate: result[0].registrationPlate,
-//     };
-//   } catch (error) {}
-// };
-
-// without transaction. as i am working in compass
 /**
  * ------------------ create Booking into db ----------------
  *
@@ -119,29 +51,37 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
     );
   }
 
-  // make that slot to booked
-  const booking = await Slot.findByIdAndUpdate(
-    payload.slot,
-    { isBooked: "booked" },
-    { new: true }
-  );
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    // make that slot to booked
+    const booking = await Slot.findByIdAndUpdate(
+      payload.slot,
+      { isBooked: "booked" },
+      { new: true, session }
+    );
 
-  // booking a new service
-  const result = await Booking.create(payload);
-  if (!result) {
-    throw new AppError(httpStatus.BAD_REQUEST, "Faild to booked a service");
-  }
+    if (booking?.isBooked !== BOOKING_TYPE.booked) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Unable to booked this slot!");
+    }
 
-  return {
-    customer: userExists,
-    service: service,
-    slot: slot,
-    vehicleType: result.vehicleType,
-    vehicleBrand: result.vehicleBrand,
-    vehicleModel: result.vehicleModel,
-    manufacturingYear: result.manufacturingYear,
-    registrationPlate: result.registrationPlate,
-  };
+    // booking a new service
+    const result = await Booking.create([payload], { session });
+    if (result.length === 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Faild to booked a service");
+    }
+
+    return {
+      customer: userExists,
+      service: service,
+      slot: slot,
+      vehicleType: result[0].vehicleType,
+      vehicleBrand: result[0].vehicleBrand,
+      vehicleModel: result[0].vehicleModel,
+      manufacturingYear: result[0].manufacturingYear,
+      registrationPlate: result[0].registrationPlate,
+    };
+  } catch (error) {}
 };
 
 /**
@@ -411,15 +351,57 @@ const getSingleBookingFromDB = async (id: string) => {
  * ------------------ delete an Booking from db ----------------
  *
  * @param id id provided by the mongodb
+ * @features release the booked slot belongs to this booking
  * @returns return a deleted booking
  */
 const deleteBookingFromDB = async (id: string) => {
-  const result = await Booking.findByIdAndUpdate(
-    id,
-    { isDeleted: true },
-    { new: true }
-  );
-  return result;
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    // transaction-1
+    // delete the booking info
+    const result = await Booking.findByIdAndUpdate(
+      id,
+      { isDeleted: true },
+      { new: true, session }
+    );
+
+    if (!result) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        "Booking information is not found!"
+      );
+    }
+
+    // transaction-2
+    // release the booked slot to available
+    const releasedSlot = await Slot.findByIdAndUpdate(
+      result?.slot,
+      {
+        isBooked: "available",
+      },
+      { new: true, session }
+    );
+
+    if (!releasedSlot || releasedSlot.isBooked !== BOOKING_TYPE.available) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Unable to release slot booked to available"
+      );
+    }
+
+    await session.commitTransaction();
+    await session.endSession();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Unable to delete a booking information"
+    );
+  }
 };
 
 /**
@@ -442,7 +424,7 @@ const updateBookingIntoDB = async (id: string, payload: Partial<TBooking>) => {
   if (!oldBooking) {
     throw new AppError(httpStatus.NOT_FOUND, "booking data is not found!");
   }
-  
+
   // check both service, slot exists, if both service and slot are provided to update
   let newService = null;
   let newSlot = null;
@@ -502,6 +484,7 @@ const updateBookingIntoDB = async (id: string, payload: Partial<TBooking>) => {
       _id: payload?.slot,
       isBooked: BOOKING_TYPE.available,
     });
+
     if (!newSlot) {
       throw new AppError(
         httpStatus.NOT_FOUND,
@@ -534,19 +517,63 @@ const updateBookingIntoDB = async (id: string, payload: Partial<TBooking>) => {
     }
   });
 
-  // make new slot to booked, if slot is changed
-  if (payload?.slot) {
-    await Slot.findByIdAndUpdate(payload.slot, { isBooked: "booked" });
-    // make old slot to available
-    await Slot.findByIdAndUpdate(oldBooking.slot._id, {
-      isBooked: "available",
-    });
-  }
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
 
-  const result = await Booking.findByIdAndUpdate(id, updatedBookingData, {
-    new: true,
-  });
-  return result;
+    // make new slot to booked, if slot is changed
+    if (payload?.slot) {
+      // make new slot to booked
+      const bookedSlot = await Slot.findByIdAndUpdate(
+        payload.slot,
+        { isBooked: "booked" },
+        { new: true, session }
+      );
+      // make old slot to available
+      const availableSlot = await Slot.findByIdAndUpdate(
+        oldBooking.slot._id,
+        {
+          isBooked: "available",
+        },
+        { new: true, session }
+      );
+
+      if (!bookedSlot || !availableSlot) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          "Unable to release old slot or make new slot to available"
+        );
+      }
+    }
+
+    const result = await Booking.findByIdAndUpdate(id, updatedBookingData, {
+      new: true,
+      session,
+    })
+      .populate("customer")
+      .populate("service")
+      .populate("slot");
+
+    if (!result) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Unable to update booking information"
+      );
+    }
+
+    // commit the transaction
+    await session.commitTransaction();
+    await session.endSession();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      "Unable to update booking information"
+    );
+  }
 };
 
 export const BookingServices = {

@@ -21,8 +21,8 @@ main().catch((err) => console.log(err));
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // await mongoose.connect(config.database_url as string); // remote mongodb
-            yield mongoose_1.default.connect("mongodb://localhost:27017/car"); // local mongodb
+            yield mongoose_1.default.connect(config_1.default.database_url); // remote mongodb
+            // await mongoose.connect("mongodb://localhost:27017/car"); // local mongodb
             console.log("Database Connected!");
             server = app_1.default.listen(config_1.default.port, () => {
                 console.log(`Server listening on port ${config_1.default.port}`);

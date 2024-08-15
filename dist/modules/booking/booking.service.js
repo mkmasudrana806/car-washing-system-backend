@@ -20,66 +20,7 @@ const service_model_1 = require("../service/service.model");
 const slot_model_1 = require("../slot/slot.model");
 const http_status_1 = __importDefault(require("http-status"));
 const booking_constant_1 = require("./booking.constant");
-// ------------------ create Booking into db ----------------
-//TODO: before production, uncomment below function for transaction
-// const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
-//   // check if user is exists
-//   const userExists: any = await User.isUserExistsByemail(user?.email);
-//   if (!userExists) {
-//     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
-//   }
-//   payload.customer = userExists._id;
-//   // check is service is exists
-//   const service = await Service.findById(payload.service);
-//   if (!service) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Service is not found!");
-//   }
-//   // check if the slot is exists
-//   const slot = await Slot.findById(payload.slot);
-//   if (!slot) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Slot is not found!");
-//   }
-//   // check if the slot is available
-//   if (slot.isBooked !== BOOKING_TYPE.available) {
-//     throw new AppError(httpStatus.BAD_REQUEST, "Slot is not available");
-//   }
-//   // check if service is belong to that slot
-//   if (String(slot.service) !== String(payload.service)) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       "this service is not belong to that slot!"
-//     );
-//   }
-//   const session = await mongoose.startSession();
-//   try {
-//     session.startTransaction();
-//     // make that slot to booked
-//     const booking = await Slot.findByIdAndUpdate(
-//       payload.slot,
-//       { isBooked: "booked" },
-//       { new: true, session }
-//     );
-//     if (booking?.isBooked !== BOOKING_TYPE.booked) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Unable to booked this slot!");
-//     }
-//     // booking a new service
-//     const result = await Booking.create([payload], { session });
-//     if (result.length === 0) {
-//       throw new AppError(httpStatus.BAD_REQUEST, "Faild to booked a service");
-//     }
-//     return {
-//       customer: userExists,
-//       service: service,
-//       slot: slot,
-//       vehicleType: result[0].vehicleType,
-//       vehicleBrand: result[0].vehicleBrand,
-//       vehicleModel: result[0].vehicleModel,
-//       manufacturingYear: result[0].manufacturingYear,
-//       registrationPlate: result[0].registrationPlate,
-//     };
-//   } catch (error) {}
-// };
-// without transaction. as i am working in compass
+const mongoose_1 = __importDefault(require("mongoose"));
 /**
  * ------------------ create Booking into db ----------------
  *
@@ -114,23 +55,31 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
     if (String(slot.service) !== String(payload.service)) {
         throw new appError_1.default(http_status_1.default.BAD_REQUEST, "this service is not belong to that slot!");
     }
-    // make that slot to booked
-    const booking = yield slot_model_1.Slot.findByIdAndUpdate(payload.slot, { isBooked: "booked" }, { new: true });
-    // booking a new service
-    const result = yield booking_model_1.Booking.create(payload);
-    if (!result) {
-        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Faild to booked a service");
+    const session = yield mongoose_1.default.startSession();
+    try {
+        session.startTransaction();
+        // make that slot to booked
+        const booking = yield slot_model_1.Slot.findByIdAndUpdate(payload.slot, { isBooked: "booked" }, { new: true, session });
+        if ((booking === null || booking === void 0 ? void 0 : booking.isBooked) !== booking_constant_1.BOOKING_TYPE.booked) {
+            throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Unable to booked this slot!");
+        }
+        // booking a new service
+        const result = yield booking_model_1.Booking.create([payload], { session });
+        if (result.length === 0) {
+            throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Faild to booked a service");
+        }
+        return {
+            customer: userExists,
+            service: service,
+            slot: slot,
+            vehicleType: result[0].vehicleType,
+            vehicleBrand: result[0].vehicleBrand,
+            vehicleModel: result[0].vehicleModel,
+            manufacturingYear: result[0].manufacturingYear,
+            registrationPlate: result[0].registrationPlate,
+        };
     }
-    return {
-        customer: userExists,
-        service: service,
-        slot: slot,
-        vehicleType: result.vehicleType,
-        vehicleBrand: result.vehicleBrand,
-        vehicleModel: result.vehicleModel,
-        manufacturingYear: result.manufacturingYear,
-        registrationPlate: result.registrationPlate,
-    };
+    catch (error) { }
 });
 /**
  * ------------------ get all Bookings from db ----------------
@@ -381,11 +330,36 @@ const getSingleBookingFromDB = (id) => __awaiter(void 0, void 0, void 0, functio
  * ------------------ delete an Booking from db ----------------
  *
  * @param id id provided by the mongodb
+ * @features release the booked slot belongs to this booking
  * @returns return a deleted booking
  */
 const deleteBookingFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield booking_model_1.Booking.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
-    return result;
+    const session = yield mongoose_1.default.startSession();
+    try {
+        session.startTransaction();
+        // transaction-1
+        // delete the booking info
+        const result = yield booking_model_1.Booking.findByIdAndUpdate(id, { isDeleted: true }, { new: true, session });
+        if (!result) {
+            throw new appError_1.default(http_status_1.default.NOT_FOUND, "Booking information is not found!");
+        }
+        // transaction-2
+        // release the booked slot to available
+        const releasedSlot = yield slot_model_1.Slot.findByIdAndUpdate(result === null || result === void 0 ? void 0 : result.slot, {
+            isBooked: "available",
+        }, { new: true, session });
+        if (!releasedSlot || releasedSlot.isBooked !== booking_constant_1.BOOKING_TYPE.available) {
+            throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Unable to release slot booked to available");
+        }
+        yield session.commitTransaction();
+        yield session.endSession();
+        return result;
+    }
+    catch (error) {
+        yield session.abortTransaction();
+        yield session.endSession();
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "Unable to delete a booking information");
+    }
 });
 /**
  * ------------------ update an Booking into db ----------------
@@ -473,18 +447,41 @@ const updateBookingIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, f
             updatedBookingData[field] = payload[field];
         }
     });
-    // make new slot to booked, if slot is changed
-    if (payload === null || payload === void 0 ? void 0 : payload.slot) {
-        yield slot_model_1.Slot.findByIdAndUpdate(payload.slot, { isBooked: "booked" });
-        // make old slot to available
-        yield slot_model_1.Slot.findByIdAndUpdate(oldBooking.slot._id, {
-            isBooked: "available",
-        });
+    const session = yield mongoose_1.default.startSession();
+    try {
+        session.startTransaction();
+        // make new slot to booked, if slot is changed
+        if (payload === null || payload === void 0 ? void 0 : payload.slot) {
+            // make new slot to booked
+            const bookedSlot = yield slot_model_1.Slot.findByIdAndUpdate(payload.slot, { isBooked: "booked" }, { new: true, session });
+            // make old slot to available
+            const availableSlot = yield slot_model_1.Slot.findByIdAndUpdate(oldBooking.slot._id, {
+                isBooked: "available",
+            }, { new: true, session });
+            if (!bookedSlot || !availableSlot) {
+                throw new appError_1.default(http_status_1.default.FORBIDDEN, "Unable to release old slot or make new slot to available");
+            }
+        }
+        const result = yield booking_model_1.Booking.findByIdAndUpdate(id, updatedBookingData, {
+            new: true,
+            session,
+        })
+            .populate("customer")
+            .populate("service")
+            .populate("slot");
+        if (!result) {
+            throw new appError_1.default(http_status_1.default.FORBIDDEN, "Unable to update booking information");
+        }
+        // commit the transaction
+        yield session.commitTransaction();
+        yield session.endSession();
+        return result;
     }
-    const result = yield booking_model_1.Booking.findByIdAndUpdate(id, updatedBookingData, {
-        new: true,
-    });
-    return result;
+    catch (error) {
+        yield session.abortTransaction();
+        yield session.endSession();
+        throw new appError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, "Unable to update booking information");
+    }
 });
 exports.BookingServices = {
     createBookingIntoDB,

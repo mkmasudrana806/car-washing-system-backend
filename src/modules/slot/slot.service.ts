@@ -158,7 +158,7 @@ const getAvailableSlotsFromDB = async (req: Record<string, unknown>) => {
     },
   ]);
 
-  return result.length;
+  return result;
 };
 
 /**

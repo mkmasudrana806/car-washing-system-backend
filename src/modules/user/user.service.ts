@@ -12,7 +12,7 @@ import { userSearchableFields } from "./user.constant";
  * @param user jwt authentication token data, including email, userId, role
  * @param query req.query object containing query parameters
  * @validations check if the user has access only users data, and admin has access both user and admin data.
- * @returns if user role 'user'. return only users data. otherwise return both user and admin data, those are not deleted also
+ * @returns if user role 'user', return only users data. otherwise return both user and admin data, those are not deleted also
  */
 const getAllUsersFromDB = async (
   user: JwtPayload,

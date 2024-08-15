@@ -145,7 +145,7 @@ const getAvailableSlotsFromDB = (req) => __awaiter(void 0, void 0, void 0, funct
             },
         },
     ]);
-    return result.length;
+    return result;
 });
 /**
  * ------------------ get single Slot from db ----------------

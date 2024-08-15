@@ -11,8 +11,8 @@ main().catch((err) => console.log(err));
 
 async function main() {
   try {
-    // await mongoose.connect(config.database_url as string); // remote mongodb
-    await mongoose.connect("mongodb://localhost:27017/car"); // local mongodb
+    await mongoose.connect(config.database_url as string); // remote mongodb
+    // await mongoose.connect("mongodb://localhost:27017/car"); // local mongodb
     console.log("Database Connected!");
     server = app.listen(config.port, () => {
       console.log(`Server listening on port ${config.port}`);
