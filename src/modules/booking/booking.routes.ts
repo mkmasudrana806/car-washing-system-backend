@@ -24,13 +24,21 @@ router.post(
 router.get("/", auth(USER_ROLE.admin), BookingControllers.getAllBookings);
 
 // get single Booking
-router.get("/:id", BookingControllers.getSingleBooking);
+router.get(
+  "/:id",
+  auth(USER_ROLE.user, USER_ROLE.admin),
+  BookingControllers.getSingleBooking
+);
 
 // get user's bookings
 userRouter.get("/", auth(USER_ROLE.user), BookingControllers.getUserBookings);
 
 // delete an Booking
-router.delete("/:id", auth(USER_ROLE.admin), BookingControllers.deleteBooking);
+router.delete(
+  "/:id",
+  auth(USER_ROLE.user, USER_ROLE.admin),
+  BookingControllers.deleteBooking
+);
 
 // update an Booking
 router.put(

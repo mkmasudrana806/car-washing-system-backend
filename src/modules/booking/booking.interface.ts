@@ -1,3 +1,4 @@
+import { Model } from "mongoose";
 import { Types } from "mongoose";
 
 type TVehicle =
@@ -23,3 +24,8 @@ export type TBooking = {
   registrationPlate: string;
   isDeleted: boolean;
 };
+
+// isBookingExistsByid interface for statics model
+export interface IBookingModel extends Model<TBooking> {
+  isBookingExistsById(_id: string): Promise<TBooking | null>;
+}

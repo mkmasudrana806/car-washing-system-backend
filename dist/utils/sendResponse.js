@@ -4,12 +4,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const http_status_1 = __importDefault(require("http-status"));
+/**
+ *
+ * @param res res object
+ * @param data data. it can be array, null, empty object or anything
+ */
 const sendResponse = (res, data) => {
     // check if data exists
     let hasData = true;
     if ((Array.isArray(data.data) && data.data.length === 0) ||
         JSON.stringify(data.data) == "{}" ||
-        data.data === null) {
+        data.data === null ||
+        data.data == undefined) {
         hasData = false;
     }
     // send response based on 'hasData' status flag

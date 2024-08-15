@@ -20,11 +20,11 @@ router.post("/create-booking", (0, auth_1.default)(auth_constant_1.USER_ROLE.use
 // get all Bookings
 router.get("/", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), booking_controller_1.BookingControllers.getAllBookings);
 // get single Booking
-router.get("/:id", booking_controller_1.BookingControllers.getSingleBooking);
+router.get("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.user, auth_constant_1.USER_ROLE.admin), booking_controller_1.BookingControllers.getSingleBooking);
 // get user's bookings
 userRouter.get("/", (0, auth_1.default)(auth_constant_1.USER_ROLE.user), booking_controller_1.BookingControllers.getUserBookings);
 // delete an Booking
-router.delete("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), booking_controller_1.BookingControllers.deleteBooking);
+router.delete("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.user, auth_constant_1.USER_ROLE.admin), booking_controller_1.BookingControllers.deleteBooking);
 // update an Booking
 router.put("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(booking_validation_1.BookingValidations.updateBookingValidationSchema), booking_controller_1.BookingControllers.updateBooking);
 router.post("/slots", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(slot_validation_1.SlotValidations.createSlotValidationSchema), slot_controller_1.SlotControllers.createSlot);

@@ -40,12 +40,12 @@ const updateBookingValidationSchema = zod_1.default.object({
         })
             .optional(),
         manufacturingYear: zod_1.default
-            .string({
+            .number({
             required_error: "Manufacturing year is required",
         })
             .optional(),
         registrationPlate: zod_1.default
-            .number({
+            .string({
             required_error: "Registration plate number is required",
         })
             .optional(),

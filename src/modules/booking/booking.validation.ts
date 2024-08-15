@@ -36,12 +36,12 @@ const updateBookingValidationSchema = z.object({
       })
       .optional(),
     manufacturingYear: z
-      .string({
+      .number({
         required_error: "Manufacturing year is required",
       })
       .optional(),
     registrationPlate: z
-      .number({
+      .string({
         required_error: "Registration plate number is required",
       })
       .optional(),

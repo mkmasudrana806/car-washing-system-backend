@@ -17,8 +17,7 @@ const createBooking = catchAsync(async (req, res) => {
 
 // ------------------ get all Bookings ------------------
 const getAllBookings = catchAsync(async (req, res) => {
-  const result = await BookingServices.getAllBookingsFromDB();
-
+  const result = await BookingServices.getAllBookingsFromDB(req.query);
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
@@ -29,7 +28,10 @@ const getAllBookings = catchAsync(async (req, res) => {
 
 // ------------------ get user Bookings ------------------
 const getUserBookings = catchAsync(async (req, res) => {
-  const result = await BookingServices.getUserBookingsFromDB(req.user?.email);
+  const result = await BookingServices.getUserBookingsFromDB(
+    req.user?.email,
+    req.query
+  );
 
   sendResponse(res, {
     success: true,

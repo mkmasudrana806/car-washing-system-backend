@@ -1,9 +1,11 @@
 import { Schema, model } from "mongoose";
-import { TBooking } from "./booking.interface";
+import { IBookingModel, TBooking } from "./booking.interface";
 import { VEHICLE_TYPE } from "./booking.constant";
+import AppError from "../../utils/appError";
+import httpStatus from "http-status";
 
 // Booking schema
-const bookingSchema = new Schema<TBooking>(
+const bookingSchema = new Schema<TBooking, IBookingModel>(
   {
     customer: { type: Schema.Types.ObjectId, required: true, ref: "User" },
     service: { type: Schema.Types.ObjectId, required: true, ref: "Service" },
@@ -24,4 +26,16 @@ const bookingSchema = new Schema<TBooking>(
   }
 );
 
-export const Booking = model<TBooking>("Booking", bookingSchema);
+// statics methods for isBookingExistsById
+bookingSchema.statics.isBookingExistsById = async function (_id: string) {
+  const result = await Booking.findById(_id);
+
+  if (result?.isDeleted) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "this booking is already deleted"
+    );
+  }
+  return result;
+};
+export const Booking = model<TBooking, IBookingModel>("Booking", bookingSchema);

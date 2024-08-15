@@ -5,6 +5,7 @@ class QueryBuilder {
      * constructor
      * @param modelQuery Model
      * @param query query parameter
+     * @features search, filter, paginate, fieldsLimiting, sort
      */
     constructor(modelQuery, query) {
         this.modelQuery = modelQuery;

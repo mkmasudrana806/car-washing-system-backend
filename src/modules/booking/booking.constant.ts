@@ -16,3 +16,16 @@ export const BOOKING_TYPE = {
   booked: "booked",
   cancelled: "canceled",
 };
+
+// customer.name, customer.email, customer.phone, service.name, service.description, booking.vehicleType, booking.vehicleBrand
+export const bookingsSearchableFields = [
+  "customer.name",
+  "customer.email",
+  "customer.phone",
+  "service.name",
+  "service.description",
+  "vehicleType",
+  "vehicleBrand",
+];
+
+ 

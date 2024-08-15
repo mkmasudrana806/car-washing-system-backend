@@ -8,6 +8,7 @@ class QueryBuilder<T> {
    * constructor
    * @param modelQuery Model
    * @param query query parameter
+   * @features search, filter, paginate, fieldsLimiting, sort
    */
   constructor(modelQuery: Query<T[], T>, query: Record<string, unknown>) {
     this.modelQuery = modelQuery;

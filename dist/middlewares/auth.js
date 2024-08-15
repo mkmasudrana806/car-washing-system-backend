@@ -20,6 +20,12 @@ const config_1 = __importDefault(require("../app/config"));
 const user_model_1 = require("../modules/user/user.model");
 //middleware: client -> route -> auth -> zod validation -> controller -> service
 // auth middleware to verify jweToken and role
+/**
+ *
+ * @param requiredRoles role like 'user', 'admin'
+ * @validation check token is sent and valid. user is exists, not deleted, jwt validation and user role authorization
+ * @returns return next() middleware
+ */
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         let token = req.headers.authorization;
