@@ -14,6 +14,10 @@ app.use(cors());
 // routes moddleware
 app.use("/api", router);
 
+app.get("/", (req, res) => {
+  res.send("Car Washing Server is running...");
+});
+
 // not found route
 app.use(notFound);
 

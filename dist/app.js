@@ -16,6 +16,9 @@ app.use((0, cookie_parser_1.default)());
 app.use((0, cors_1.default)());
 // routes moddleware
 app.use("/api", routes_1.default);
+app.get("/", (req, res) => {
+    res.send("Car Washing Server is running...");
+});
 // not found route
 app.use(notFound_1.default);
 // global error handler route
