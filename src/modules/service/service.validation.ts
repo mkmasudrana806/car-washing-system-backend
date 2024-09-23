@@ -17,6 +17,9 @@ const createServiceValidationSchema = z.object({
         invalid_type_error: "duration must in integer nonnegative number",
       })
       .nonnegative("duration must not be negative"),
+    featured: z.boolean({ invalid_type_error: "featured must be boolean" }),
+    serviceImgUrl: z
+      .string({ invalid_type_error: "Service image url must be string" })
   }),
 });
 

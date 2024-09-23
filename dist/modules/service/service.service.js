@@ -39,9 +39,12 @@ const createServiceIntoDB = (payload) => __awaiter(void 0, void 0, void 0, funct
 const getAllServicesFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const serviceQuery = new QueryBuilder_1.default(service_model_1.Service.find({ isDeleted: { $ne: true } }), query)
         .search(service_constant_1.serviceSearchableFields)
+        .filter()
+        .sort()
         .paginate();
     const result = yield serviceQuery.modelQuery;
-    return result;
+    const meta = yield serviceQuery.countTotal();
+    return { result, meta };
 });
 /**
  * ------------------ get single Service from db ----------------

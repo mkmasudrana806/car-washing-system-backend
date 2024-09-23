@@ -29,7 +29,7 @@ const createService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 // ------------------ get all Services ------------------
 const getAllServices = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield service_service_1.ServiceServices.getAllServicesFromDB(req.query);
+    const { result, meta } = yield service_service_1.ServiceServices.getAllServicesFromDB(req.query);
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,

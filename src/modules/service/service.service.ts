@@ -30,9 +30,13 @@ const getAllServicesFromDB = async (query: Record<string, unknown>) => {
     query
   )
     .search(serviceSearchableFields)
+    .filter()
+    .sort()
     .paginate();
   const result = await serviceQuery.modelQuery;
-  return result;
+  const meta = await serviceQuery.countTotal();
+
+  return { result, meta };
 };
 
 /**

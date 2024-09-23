@@ -15,7 +15,9 @@ const slot_validation_1 = require("../slot/slot.validation");
 const slot_controller_1 = require("../slot/slot.controller");
 const router = express_1.default.Router();
 // create a service
-router.post("/create-service", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(service_validation_1.ServiceValidations.createServiceValidationSchema), service_controller_1.ServiceControllers.createService);
+router.post("/create-service", 
+// auth(USER_ROLE.admin),
+(0, validateRequestData_1.default)(service_validation_1.ServiceValidations.createServiceValidationSchema), service_controller_1.ServiceControllers.createService);
 // get all Services
 router.get("/", service_controller_1.ServiceControllers.getAllServices);
 // get single Service

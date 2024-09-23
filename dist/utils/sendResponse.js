@@ -24,6 +24,7 @@ const sendResponse = (res, data) => {
         statusCode: hasData ? data.statusCode : http_status_1.default.NOT_FOUND,
         message: hasData ? data.message : "Data not found",
         token: data === null || data === void 0 ? void 0 : data.token,
+        meta: data === null || data === void 0 ? void 0 : data.meta,
         data: data.data,
     });
 };

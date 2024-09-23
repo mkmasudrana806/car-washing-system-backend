@@ -28,6 +28,11 @@ const serviceSchema = new mongoose_1.Schema({
         type: Number,
         required: true,
     },
+    featured: {
+        type: Boolean,
+        required: true,
+    },
+    serviceImgUrl: { type: String, required: true },
     isDeleted: {
         type: Boolean,
         default: false,

@@ -17,13 +17,16 @@ const createService = catchAsync(async (req, res) => {
 
 // ------------------ get all Services ------------------
 const getAllServices = catchAsync(async (req, res) => {
-  const result = await ServiceServices.getAllServicesFromDB(req.query);
+  const { result, meta } = await ServiceServices.getAllServicesFromDB(
+    req.query
+  );
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     message: "Services retrieved successfully",
     data: result,
+    
   });
 });
 

@@ -5,6 +5,8 @@ export type TService = {
   description: string;
   price: number;
   duration: number;
+  featured: boolean;
+  serviceImgUrl: string;
   isDeleted: boolean;
 };
 

@@ -13,7 +13,9 @@ const auth_1 = __importDefault(require("../../middlewares/auth"));
 const auth_constant_1 = require("../auth/auth.constant");
 const router = express_1.default.Router();
 // get all users
-router.get("/", (0, auth_1.default)(auth_constant_1.USER_ROLE.user, auth_constant_1.USER_ROLE.admin), user_controller_1.UserControllers.getAllUsers);
+router.get("/", 
+// auth(USER_ROLE.user, USER_ROLE.admin),
+user_controller_1.UserControllers.getAllUsers);
 // get single user
 router.get("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.user, auth_constant_1.USER_ROLE.admin), user_controller_1.UserControllers.getSingleUser);
 // delete an user

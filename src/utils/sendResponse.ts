@@ -1,11 +1,12 @@
 import { Response } from "express";
 import httpStatus from "http-status";
 
-type TResponse<T> = {
+type TResponse<T, U> = {
   success: boolean;
   statusCode: number;
   message?: string;
   token?: string;
+  meta?: U;
   data: T;
 };
 
@@ -14,7 +15,7 @@ type TResponse<T> = {
  * @param res res object
  * @param data data. it can be array, null, empty object or anything
  */
-const sendResponse = <T>(res: Response, data: TResponse<T>) => {
+const sendResponse = <T, U>(res: Response, data: TResponse<T, U>) => {
   // check if data exists
   let hasData: boolean = true;
   if (
@@ -32,6 +33,7 @@ const sendResponse = <T>(res: Response, data: TResponse<T>) => {
     statusCode: hasData ? data.statusCode : httpStatus.NOT_FOUND,
     message: hasData ? data.message : "Data not found",
     token: data?.token,
+    meta: data?.meta,
     data: data.data,
   });
 };

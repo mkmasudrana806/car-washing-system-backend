@@ -14,7 +14,7 @@ const router = express.Router();
 // create a service
 router.post(
   "/create-service",
-  auth(USER_ROLE.admin),
+  // auth(USER_ROLE.admin),
   validateRequest(ServiceValidations.createServiceValidationSchema),
   ServiceControllers.createService
 );

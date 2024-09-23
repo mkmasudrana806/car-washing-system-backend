@@ -43,9 +43,21 @@ class QueryBuilder<T> {
    * @return returns data matching with that email
    */
   filter() {
-    const queryObj = { ...this.query }; // copied query object
+    const queryObj = { ...this.query };
     const excludeFields = ["searchTerm", "sort", "limit", "page", "fields"];
     excludeFields.forEach((el) => delete queryObj[el]);
+
+    // Handle price range for exact matches
+    if (queryObj.minPrice && queryObj.maxPrice) {
+      queryObj.price = {
+        $gte: Number(queryObj.minPrice),
+        $lte: Number(queryObj.maxPrice),
+      };
+      delete queryObj.minPrice;
+      delete queryObj.maxPrice;
+    }
+
+    // Handle other filters like price or other exact matches
     this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
     return this;
   }
@@ -90,6 +102,25 @@ class QueryBuilder<T> {
       (this?.query?.fields as string)?.split(",").join(" ") || "-__v";
     this.modelQuery = this.modelQuery.select(fields);
     return this;
+  }
+
+  /**
+   * -------------------  count documents -------------------------
+   * @returns it return total documents, page, limit and totalPage
+   */
+  async countTotal() {
+    const totalQueryries = this.modelQuery.getFilter(); // it gives previous filtered documents
+    const total = await this.modelQuery.model.countDocuments(totalQueryries);
+    let page = Number(this?.query?.page) || 1;
+    let limit = Number(this?.query?.limit) || 10;
+    const totalPage = Math.ceil(total / limit);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPage,
+    };
   }
 }
 

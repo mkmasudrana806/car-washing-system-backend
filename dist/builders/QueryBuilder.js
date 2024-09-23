@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 class QueryBuilder {
     /**
@@ -36,9 +45,19 @@ class QueryBuilder {
      * @return returns data matching with that email
      */
     filter() {
-        const queryObj = Object.assign({}, this.query); // copied query object
+        const queryObj = Object.assign({}, this.query);
         const excludeFields = ["searchTerm", "sort", "limit", "page", "fields"];
         excludeFields.forEach((el) => delete queryObj[el]);
+        // Handle price range for exact matches
+        if (queryObj.minPrice && queryObj.maxPrice) {
+            queryObj.price = {
+                $gte: Number(queryObj.minPrice),
+                $lte: Number(queryObj.maxPrice),
+            };
+            delete queryObj.minPrice;
+            delete queryObj.maxPrice;
+        }
+        // Handle other filters like price or other exact matches
         this.modelQuery = this.modelQuery.find(queryObj);
         return this;
     }
@@ -81,6 +100,26 @@ class QueryBuilder {
         let fields = ((_b = (_a = this === null || this === void 0 ? void 0 : this.query) === null || _a === void 0 ? void 0 : _a.fields) === null || _b === void 0 ? void 0 : _b.split(",").join(" ")) || "-__v";
         this.modelQuery = this.modelQuery.select(fields);
         return this;
+    }
+    /**
+     * -------------------  count documents -------------------------
+     * @returns it return total documents, page, limit and totalPage
+     */
+    countTotal() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const totalQueryries = this.modelQuery.getFilter(); // it gives previous filtered documents
+            const total = yield this.modelQuery.model.countDocuments(totalQueryries);
+            let page = Number((_a = this === null || this === void 0 ? void 0 : this.query) === null || _a === void 0 ? void 0 : _a.page) || 1;
+            let limit = Number((_b = this === null || this === void 0 ? void 0 : this.query) === null || _b === void 0 ? void 0 : _b.limit) || 10;
+            const totalPage = Math.ceil(total / limit);
+            return {
+                total,
+                page,
+                limit,
+                totalPage,
+            };
+        });
     }
 }
 exports.default = QueryBuilder;
