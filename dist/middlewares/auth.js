@@ -12,49 +12,54 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
-const appError_1 = __importDefault(require("../utils/appError"));
 const http_status_1 = __importDefault(require("http-status"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const config_1 = __importDefault(require("../app/config"));
 const user_model_1 = require("../modules/user/user.model");
-//middleware: client -> route -> auth -> zod validation -> controller -> service
-// auth middleware to verify jweToken and role
+const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
+const appError_1 = __importDefault(require("../utils/appError"));
+const config_1 = __importDefault(require("../app/config"));
 /**
- *
- * @param requiredRoles role like 'user', 'admin'
- * @validation check token is sent and valid. user is exists, not deleted, jwt validation and user role authorization
- * @returns return next() middleware
+ * ------------------- auth --------------------
+ * @param requiredRoles user role like 'user', 'admin',
+ * @returns return to next middleware and set user to Request object
  */
 const auth = (...requiredRoles) => {
     return (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-        let token = req.headers.authorization;
-        // check if the token is sent from the client
+        const token = req.headers.authorization;
+        // check if token is provided to headers
         if (!token) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You have no access to this route");
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
         }
-        // split the token and exclude 'Bearer' from the token and take only token part
-        token = token.split(" ")[1];
-        // check if the token is valid
-        const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_secret);
+        // decoded the token
+        let decoded;
+        try {
+            decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_secret);
+        }
+        catch (error) {
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
+        }
         const { email, role, iat } = decoded;
-        // check if the user is exists
-        const user = yield user_model_1.User.isUserExistsByemail(email);
+        // check if the user exits and not blocked and not deleted
+        const user = yield user_model_1.User.findOne({ email, role });
         if (!user) {
-            throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
+            throw new appError_1.default(http_status_1.default.NOT_FOUND, "Authorized user is not found!");
         }
-        // check if the user is already deleted
-        if (user === null || user === void 0 ? void 0 : user.isDeleted) {
-            throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+        if (user.status === "blocked") {
+            throw new appError_1.default(http_status_1.default.NOT_FOUND, "Authorized user is already blocked!");
         }
+        if (user.isDeleted) {
+            throw new appError_1.default(http_status_1.default.NOT_FOUND, "Authorized user is already deleted!");
+        }
+        // check if the jwt issued before the password change
         if (user.passwordChangedAt &&
             user_model_1.User.isJWTIssuedBeforePasswordChange(user.passwordChangedAt, iat)) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You have no access to this route");
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized");
         }
-        // check if the user is authorized access
-        if (requiredRoles.length > 0 && !(requiredRoles === null || requiredRoles === void 0 ? void 0 : requiredRoles.includes(role))) {
-            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You have no access to this route");
+        // check if the user role and token role same
+        if (requiredRoles.length > 0 && !requiredRoles.includes(role)) {
+            throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
         }
+        // make sure project has index.d.ts file which include user in Request object anywhere in ./src directory
         req.user = decoded;
         next();
     }));

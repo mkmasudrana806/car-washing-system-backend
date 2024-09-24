@@ -1,53 +1,87 @@
 import httpStatus from "http-status";
-import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
-import { authServices } from "./auth.service";
-import { JwtPayload } from "jsonwebtoken";
+import { AuthServices } from "./auth.service";
+import catchAsync from "../../utils/catchAsync";
 
-// --------------- register or signup an user --------------------
-const registerUser = catchAsync(async (req, res) => {
-  const result = await authServices.RegisterUserIntoDB(req.body);
+// ---------------------- Login an user -----------------------
+const loginUser = catchAsync(async (req, res) => {
+  const loginInfo = req.body;
+  const { accessToken, refreshToken } = await AuthServices.loginUserIntoDB(
+    loginInfo
+  );
+
+  // set refresh token to cookie
+  res.cookie("refreshToken", refreshToken);
 
   sendResponse(res, {
-    success: true,
     statusCode: httpStatus.OK,
-    message: "User registered successfully",
+    success: true,
+    message: "User is logged in successfully",
+    data: { accessToken },
+  });
+});
+
+// ---------------------- Change user password -----------------------
+const changeUserPassword = catchAsync(async (req, res) => {
+  const user = req.user;
+  const payload = req.body;
+  const result = await AuthServices.changeUserPassword(user, payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Password change is successfull",
     data: result,
   });
 });
 
-// --------------- login an user --------------------
-const loginUser = catchAsync(async (req, res) => {
-  const { user, accessToken } = await authServices.loginUserIntoDB(req.body);
+// ---------------------- forgot password -----------------------
+const forgotPassword = catchAsync(async (req, res) => {
+  const result = await AuthServices.forgotPassword(req.body?.email);
 
-  // set access token to cookie memory
-  res.cookie("accessToken", accessToken);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "User logged in successfully",
-    token: accessToken,
-    data: user,
+    message: `Reset password link is sent to your email address at ${req.body?.email}`,
+    data: result,
   });
 });
 
-// --------------- change password --------------------
-const changePassword = catchAsync(async (req, res) => {
-  const result = await authServices.changePasswordIntoDB(
-    req.user as JwtPayload,
-    req.body
+// ---------------------- reset password -----------------------
+const resetPassword = catchAsync(async (req, res) => {
+  const { email, newPassword } = req.body;
+  const token = req.headers.authorization as string;
+  const result = await AuthServices.resetPasswordIntoDB(
+    email,
+    newPassword,
+    token
   );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "User password is changed successfully",
+    message: "Your password is reset successfull",
     data: result,
   });
 });
 
-export const authControllers = {
-  registerUser,
+// ---------------------- refresh token generate -----------------------
+const refreshTokenSetup = catchAsync(async (req, res) => {
+  const { refreshToken } = req.cookies;
+  const { accessToken } = await AuthServices.refreshTokenSetup(refreshToken);
+   
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Access token generated successfully",
+    data: { accessToken },
+  });
+});
+
+export const AuthController = {
   loginUser,
-  changePassword,
+  changeUserPassword,
+  forgotPassword,
+  resetPassword,
+  refreshTokenSetup,
 };

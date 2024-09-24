@@ -12,46 +12,74 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authControllers = void 0;
+exports.AuthController = void 0;
 const http_status_1 = __importDefault(require("http-status"));
-const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const auth_service_1 = require("./auth.service");
-// --------------- register or signup an user --------------------
-const registerUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield auth_service_1.authServices.RegisterUserIntoDB(req.body);
-    (0, sendResponse_1.default)(res, {
-        success: true,
-        statusCode: http_status_1.default.OK,
-        message: "User registered successfully",
-        data: result,
-    });
-}));
-// --------------- login an user --------------------
+const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
+// ---------------------- Login an user -----------------------
 const loginUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { user, accessToken } = yield auth_service_1.authServices.loginUserIntoDB(req.body);
-    // set access token to cookie memory
-    res.cookie("accessToken", accessToken);
+    const loginInfo = req.body;
+    const { accessToken, refreshToken } = yield auth_service_1.AuthServices.loginUserIntoDB(loginInfo);
+    // set refresh token to cookie
+    res.cookie("refreshToken", refreshToken);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: "User logged in successfully",
-        token: accessToken,
-        data: user,
+        message: "User is logged in successfully",
+        data: { accessToken },
     });
 }));
-// --------------- change password --------------------
-const changePassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield auth_service_1.authServices.changePasswordIntoDB(req.user, req.body);
+// ---------------------- Change user password -----------------------
+const changeUserPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const payload = req.body;
+    const result = yield auth_service_1.AuthServices.changeUserPassword(user, payload);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: "User password is changed successfully",
+        message: "Password change is successfull",
         data: result,
     });
 }));
-exports.authControllers = {
-    registerUser,
+// ---------------------- forgot password -----------------------
+const forgotPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const result = yield auth_service_1.AuthServices.forgotPassword((_a = req.body) === null || _a === void 0 ? void 0 : _a.email);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Reset password link is sent to your email address at ${(_b = req.body) === null || _b === void 0 ? void 0 : _b.email}`,
+        data: result,
+    });
+}));
+// ---------------------- reset password -----------------------
+const resetPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, newPassword } = req.body;
+    const token = req.headers.authorization;
+    const result = yield auth_service_1.AuthServices.resetPasswordIntoDB(email, newPassword, token);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Your password is reset successfull",
+        data: result,
+    });
+}));
+// ---------------------- refresh token generate -----------------------
+const refreshTokenSetup = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { refreshToken } = req.cookies;
+    const { accessToken } = yield auth_service_1.AuthServices.refreshTokenSetup(refreshToken);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Access token generated successfully",
+        data: { accessToken },
+    });
+}));
+exports.AuthController = {
     loginUser,
-    changePassword,
+    changeUserPassword,
+    forgotPassword,
+    resetPassword,
+    refreshTokenSetup,
 };

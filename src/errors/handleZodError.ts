@@ -3,7 +3,7 @@ import { TErrorMessages, TGenericErrorResponse } from "../interface/error";
 
 // handle zod error functions
 const handleZodError = (err: ZodError): TGenericErrorResponse => {
-  const statusCode = 401;
+  const statusCode = 400;
   const errorMessages: TErrorMessages = err.issues.map((issue: ZodIssue) => {
     return {
       path: issue?.path[issue.path.length - 1],

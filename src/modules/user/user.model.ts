@@ -1,56 +1,85 @@
-import { Schema, model } from "mongoose";
+import { model, Schema } from "mongoose";
 import bcrypt from "bcrypt";
-import { IUserModel, TUser } from "./user.interface";
+import { IUser, TUser, TUserName } from "./user.interface";
 import config from "../../app/config";
 import AppError from "../../utils/appError";
 import httpStatus from "http-status";
 
-// user schema
-const userSchema = new Schema<TUser, IUserModel>(
+const userNameSchema = new Schema<TUserName>({
+  firstName: { type: String, required: true },
+  middleName: { type: String },
+  lastName: { type: String, required: true },
+});
+
+// create user schema
+const userSchema = new Schema<TUser, IUser>(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    name: { type: userNameSchema, required: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     password: {
       type: String,
       required: true,
-      select: 0, // hide password field in client response
+      select: 1,
     },
-    needsPasswordChange: {
-      type: Boolean,
-      default: true,
+    passwordChangedAt: { type: Date },
+    age: { type: Number, required: true },
+    gender: {
+      type: String,
+      required: true,
+      enum: ["male", "female", "others"],
     },
-    passwordChangedAt: {
-      type: Date,
-    },
-    phone: { type: String, required: true },
+    contact: { type: String, required: true },
+    address: { type: String, required: true },
     role: {
       type: String,
+      required: true,
       enum: ["user", "admin"],
+      default: "user",
     },
-    address: { type: String, required: true },
-    isDeleted: {
-      type: Boolean,
-      default: false,
+    status: {
+      type: String,
+      required: true,
+      enum: ["active", "blocked"],
+      default: "active",
     },
+    profileImg: { type: String },
+    isDeleted: { type: Boolean, required: true, default: false },
   },
   {
     timestamps: true,
   }
 );
 
-// *************** document middleware start **************
+// ----------- pre middleware hook to hash password -----------
 userSchema.pre("save", async function (next) {
-  // hassing password and save into DB
   const user = this;
   user.password = await bcrypt.hash(
     user.password,
     Number(config.bcrypt_salt_rounds)
   );
-
   next();
 });
 
-// ****************** statics methods ***************************
+// ----------- hide password to client response -----------
+userSchema.post("save", function (doc) {
+  doc.password = "";
+});
+
+// ----------- hide password to client response -----------
+userSchema.post("find", function (docs) {
+  docs.forEach((doc: TUser) => {
+    doc.password = "";
+  });
+});
+
+// ----------- hide password to client response -----------
+userSchema.post("findOneAndUpdate", function (doc) {
+  doc.password = "";
+});
 
 /**
  * @param email email address of an user
@@ -74,26 +103,16 @@ userSchema.statics.isUserExistsById = async function (_id: string) {
   return result;
 };
 
-/**
- * @param plain user password passed from client
- * @param hash hashed password of an user found in the database
- * @returns return true if password matches, false otherwise
- */
-userSchema.statics.isPasswordMatched = async function (
-  plain: string,
-  hash: string
+// ----------- isPasswordMatch statics methods -----------
+userSchema.statics.isPasswordMatch = async function (
+  plainPassword: string,
+  hashedPassword: string
 ) {
-  const result = await bcrypt.compare(plain, hash);
+  const result = await bcrypt.compare(plainPassword, hashedPassword);
   return result;
 };
 
-// jwt invalidates
-/**
- *
- * @param passwordChangedTimestamp last password change timestamp of an user
- * @param jwtIssuedtimestamp // jwt issued timestamp of an authenticated user. iat timestamp
- * @returns return true if isJWTIssuedBeforePasswordChange true, false otherwise
- */
+// ----------- check is jwt issued before password change -----------
 userSchema.statics.isJWTIssuedBeforePasswordChange = function (
   passwordChangedTimestamp: Date,
   jwtIssuedtimestamp: number
@@ -104,11 +123,5 @@ userSchema.statics.isJWTIssuedBeforePasswordChange = function (
   return passwordChangedtime > jwtIssuedtimestamp;
 };
 
-// set empty string after saving password
-// set password to empty string before send response to client
-userSchema.post("save", function (doc) {
-  doc.password = "";
-});
-
-// user model export
-export const User = model<TUser, IUserModel>("User", userSchema);
+// make a model and export
+export const User = model<TUser, IUser>("User", userSchema);

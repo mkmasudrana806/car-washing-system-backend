@@ -79,18 +79,19 @@ class QueryBuilder<T> {
 
   /**
    * pagination example :-
-   * @default by default page=1 and limit=10
    * @example query parameter: page=1&limit=20
-   * @returns return page wise data. by default each page 10 data
+   * @returns return page wise data.
    */
+
   paginate() {
-    let page = Number(this?.query?.page) || 1;
-    let limit = Number(this?.query?.limit) || 10;
-    let skip = (page - 1) * limit;
-    this.modelQuery = this.modelQuery.skip(skip).limit(limit);
+    let page = Number(this?.query?.page);
+    let limit = Number(this?.query?.limit);
+    if (page && limit) {
+      let skip = (page - 1) * limit;
+      this.modelQuery = this.modelQuery.skip(skip).limit(limit);
+    }
     return this;
   }
-
   // fields limiting
   /**
    * @default by default it remove only __v fields

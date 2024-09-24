@@ -1,66 +1,83 @@
-import httpStatus from "http-status";
-import AppError from "../../utils/appError";
+import jwt, { JwtPayload } from "jsonwebtoken";
+
+import makeAllowedFieldData from "../../utils/allowedFieldUpdatedData";
+import makeFlattenedObject from "../../utils/makeFlattenedObject";
+import { allowedFieldsToUpdate, searchableFields } from "./user.constant";
 import { TUser } from "./user.interface";
 import { User } from "./user.model";
-import { JwtPayload } from "jsonwebtoken";
+
+import httpStatus from "http-status";
+
+import sendImageToCloudinary from "../../utils/sendImageToCloudinary";
+import { TfileUpload } from "../../interface/fileUploadType";
+import config from "../../app/config";
+import AppError from "../../utils/appError";
 import QueryBuilder from "../../builders/QueryBuilder";
-import { userSearchableFields } from "./user.constant";
 
 /**
- * ------------------ get all users from db ----------------
- *
- * @param user jwt authentication token data, including email, userId, role
- * @param query req.query object containing query parameters
- * @validations check if the user has access only users data, and admin has access both user and admin data.
- * @returns if user role 'user', return only users data. otherwise return both user and admin data, those are not deleted also
+ * ----------------------- Create an user----------------------
+ * @param file image file to upload (optional)
+ * @param payload new user data
+ * @returns return newly created user
  */
-const getAllUsersFromDB = async (
-  user: JwtPayload,
-  query: Record<string, unknown>
-) => {
-  let userQuery;
-  if (user?.role === "user") {
-    userQuery = new QueryBuilder(
-      User.find({ role: "user", isDeleted: false }),
-      query
-    )
-      .search(userSearchableFields)
-      .filter()
-      .paginate()
-      .sort()
-      .fieldsLimiting();
-  } else {
-    userQuery = new QueryBuilder(User.find({ isDeleted: false }), query)
-      .search(userSearchableFields)
-      .filter()
-      .paginate()
-      .sort()
-      .fieldsLimiting();
+const createAnUserIntoDB = async (file: TfileUpload, payload: TUser) => {
+  // set default password if password is not provided
+  payload.password = payload.password || (config.default_password as string);
+
+  // check if the user already exists
+  const user = await User.findOne({ email: payload.email });
+  if (user) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User already exists");
   }
+
+  // set profileImg if image is provided
+  // if (file) {
+  //   const imageName = `${payload.email}-${payload.name.firstName}`;
+  //   const path = file.path;
+  //   const uploadedImage: any = await sendImageToCloudinary(path, imageName);
+  //   payload.profileImg = uploadedImage.secure_url;
+  // }
+
+  // set placeholder image if image is not provided
+  if (!file || payload.profileImg === "") {
+    payload.profileImg =
+      "https://avatar.iran.liara.run/public/boy?username=Ash";
+  }
+
+  const result = await User.create(payload);
+  return result;
+};
+
+/**
+ * ----------------------- get all users ----------------------
+ * @return return all users
+ */
+const getAllUsersFromDB = async (query: Record<string, any>) => {
+  const userQuery = new QueryBuilder(User.find(), query)
+    .search(searchableFields)
+    .filter()
+    .sort()
+    .paginate()
+    .fieldsLimiting();
+  const meta = await userQuery.countTotal();
   const result = await userQuery.modelQuery;
-  return result;
+  return { meta, result };
 };
 
 /**
- * ------------------ get single user from db ----------------
- *
- * @param id user id provided by mongodb
- * @validation if user is deleted, throw an error
- * @returns return an user
+ * -----------------  get me  -----------------
+ * @param email email address
+ * @param role user role
+ * @returns own user data based on jwt payload data
  */
-const getSingleUserFromDB = async (id: string) => {
-  const result = await User.findById(id);
-
-  if (result?.isDeleted) {
-    throw new AppError(httpStatus.FORBIDDEN, "User is deleted");
-  }
+const getMe = async (email: string, role: string) => {
+  const result = await User.findOne({ email, role });
   return result;
 };
 
 /**
- * ------------------ delete an user from db ----------------
- *
- * @param id user id provided by mongodb
+ * --------------- delete an user form db ----------------
+ * @param id user id
  * @returns return deleted user data
  */
 const deleteUserFromDB = async (id: string) => {
@@ -73,40 +90,83 @@ const deleteUserFromDB = async (id: string) => {
 };
 
 /**
- * ------------------ update an user into db ----------------
- * @param id user id provided by mongodb
- * @param payload updated user data
- * @validations define allowed fields and filter out new updated object.
- * check if the user is exists and not deleted
- * @returns return updated data
+ * --------------- update an user form db ----------------
+ * @param id user id
+ * @param payload update user data
+ * @featurs admin can change own and user data. user can change own data only
+ * @returns return updated user data
  */
-const updateUserIntoDB = async (id: string, payload: Partial<TUser>) => {
-  // Allowed fields to update data
-  const allowedFields: (keyof TUser)[] = ["name", "phone", "address"];
-
-  // Filter payload to only include allowed fields
-  const updateData: Record<string, unknown> = {};
-  allowedFields.forEach((field) => {
-    if (payload[field] !== undefined) {
-      updateData[field] = payload[field];
-    }
-  });
-
-  // Check if user exists and is not deleted
-  if (!(await User.isUserExistsById(id))) {
-    throw new AppError(httpStatus.NOT_FOUND, "User is not found");
+const updateUserIntoDB = async (
+  currentUser: JwtPayload,
+  id: string,
+  payload: Partial<TUser>
+) => {
+  // check if the user exists not deleted or blocked
+  const user = await User.findById(id);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "Requested user not found!");
+  }
+  if (user.isDeleted) {
+    throw new AppError(httpStatus.NOT_FOUND, "User is already deleted!");
+  }
+  if (user.status === "blocked") {
+    throw new AppError(httpStatus.NOT_FOUND, "User is already blocked!");
   }
 
-  const result = await User.findByIdAndUpdate(id, updateData, {
+  // check if current logged user and request not same and role is user.
+  // means an user cna not update another user data
+  if (currentUser.email !== user?.email && currentUser.role === "user") {
+    throw new AppError(httpStatus.UNAUTHORIZED, "You are not authorized!");
+  }
+
+  // filter allowed fileds only
+  const allowedFieldData = makeAllowedFieldData<TUser>(
+    allowedFieldsToUpdate,
+    payload
+  );
+  // make flattened object
+  const flattenedData = makeFlattenedObject(allowedFieldData);
+
+  const result = await User.findByIdAndUpdate(id, flattenedData, {
     new: true,
-    runValidators: true, // Run mongoose schema validation before updating new data
+    runValidators: true,
+  });
+  return result;
+};
+
+/**
+ * -------------------- change user status ----------------------
+ * @param id user id
+ * @param payload user status payload
+ * @validatios check if the user exists,not deleted. only admin can change user status
+ * @note admin can not change own status. admin can change only user status
+ * @returns return updated user status
+ */
+const changeUserStatusIntoDB = async (
+  id: string,
+  payload: { status: string }
+) => {
+  // check if user exists, not deleted. find user that has role as user
+  const user = await User.findOne({ _id: id, role: "user" });
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
+  }
+  if (user.isDeleted) {
+    throw new AppError(httpStatus.FORBIDDEN, "User is already deleted!");
+  }
+
+  const result = await User.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
   });
   return result;
 };
 
 export const UserServices = {
+  createAnUserIntoDB,
   getAllUsersFromDB,
-  getSingleUserFromDB,
+  getMe,
   deleteUserFromDB,
   updateUserIntoDB,
+  changeUserStatusIntoDB,
 };

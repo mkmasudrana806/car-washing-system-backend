@@ -5,9 +5,9 @@ import { BookingControllers } from "./booking.controller";
 import validateRequest from "../../middlewares/validateRequestData";
 import { BookingValidations } from "./booking.validation";
 import auth from "../../middlewares/auth";
-import { USER_ROLE } from "../auth/auth.constant";
 import { SlotValidations } from "../slot/slot.validation";
 import { SlotControllers } from "../slot/slot.controller";
+import { USER_ROLE } from "../auth/auth.constant";
 
 const router = express.Router();
 const userRouter = express.Router();

@@ -77,16 +77,17 @@ class QueryBuilder {
     }
     /**
      * pagination example :-
-     * @default by default page=1 and limit=10
      * @example query parameter: page=1&limit=20
-     * @returns return page wise data. by default each page 10 data
+     * @returns return page wise data.
      */
     paginate() {
         var _a, _b;
-        let page = Number((_a = this === null || this === void 0 ? void 0 : this.query) === null || _a === void 0 ? void 0 : _a.page) || 1;
-        let limit = Number((_b = this === null || this === void 0 ? void 0 : this.query) === null || _b === void 0 ? void 0 : _b.limit) || 10;
-        let skip = (page - 1) * limit;
-        this.modelQuery = this.modelQuery.skip(skip).limit(limit);
+        let page = Number((_a = this === null || this === void 0 ? void 0 : this.query) === null || _a === void 0 ? void 0 : _a.page);
+        let limit = Number((_b = this === null || this === void 0 ? void 0 : this.query) === null || _b === void 0 ? void 0 : _b.limit);
+        if (page && limit) {
+            let skip = (page - 1) * limit;
+            this.modelQuery = this.modelQuery.skip(skip).limit(limit);
+        }
         return this;
     }
     // fields limiting

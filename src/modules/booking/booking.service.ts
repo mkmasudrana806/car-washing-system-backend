@@ -1,13 +1,13 @@
 import { JwtPayload } from "jsonwebtoken";
 import { TBooking } from "./booking.interface";
 import { Booking } from "./booking.model";
-import { User } from "../user/user.model";
 import AppError from "../../utils/appError";
 import { Service } from "../service/service.model";
 import { Slot } from "../slot/slot.model";
 import httpStatus from "http-status";
 import { BOOKING_TYPE, bookingsSearchableFields } from "./booking.constant";
 import mongoose from "mongoose";
+import { User } from "../user/user.model";
 
 /**
  * ------------------ create Booking into db ----------------
@@ -24,7 +24,7 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
   if (!userExists) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
-  payload.customer = userExists._id;
+  payload.user = userExists._id;
 
   // check is service is exists
   const service = await Service.findById(payload.service);
@@ -40,7 +40,7 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
 
   // check if the slot is available
   if (slot.isBooked !== BOOKING_TYPE.available) {
-    throw new AppError(httpStatus.BAD_REQUEST, "Slot is not available");
+    throw new AppError(httpStatus.BAD_REQUEST, "Slot is already booked!");
   }
 
   // check if service is belong to that slot
@@ -71,17 +71,13 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
       throw new AppError(httpStatus.BAD_REQUEST, "Faild to booked a service");
     }
 
-    return {
-      customer: userExists,
-      service: service,
-      slot: slot,
-      vehicleType: result[0].vehicleType,
-      vehicleBrand: result[0].vehicleBrand,
-      vehicleModel: result[0].vehicleModel,
-      manufacturingYear: result[0].manufacturingYear,
-      registrationPlate: result[0].registrationPlate,
-    };
-  } catch (error) {}
+    await session.commitTransaction();
+    await session.endSession();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+  }
 };
 
 /**
@@ -502,15 +498,7 @@ const updateBookingIntoDB = async (id: string, payload: Partial<TBooking>) => {
 
   // allowed fields to update and updated payload
   const updatedBookingData: Record<string, unknown> = {};
-  const allowedFields: (keyof TBooking)[] = [
-    "service",
-    "slot",
-    "vehicleType",
-    "vehicleBrand",
-    "vehicleModel",
-    "manufacturingYear",
-    "registrationPlate",
-  ];
+  const allowedFields: (keyof TBooking)[] = ["service", "slot", "vehicleInfo"];
   allowedFields.forEach((field) => {
     if (payload[field] !== undefined) {
       updatedBookingData[field] = payload[field];

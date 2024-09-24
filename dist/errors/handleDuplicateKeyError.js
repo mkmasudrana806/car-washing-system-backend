@@ -11,7 +11,7 @@ const handleDuplicateKeyError = (err) => {
             message: `${extracted_message} is already exists`,
         },
     ];
-    const statusCode = 401;
+    const statusCode = 400;
     return {
         message: "duplicate key error",
         statusCode,

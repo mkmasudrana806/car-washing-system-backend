@@ -14,13 +14,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BookingServices = void 0;
 const booking_model_1 = require("./booking.model");
-const user_model_1 = require("../user/user.model");
 const appError_1 = __importDefault(require("../../utils/appError"));
 const service_model_1 = require("../service/service.model");
 const slot_model_1 = require("../slot/slot.model");
 const http_status_1 = __importDefault(require("http-status"));
 const booking_constant_1 = require("./booking.constant");
 const mongoose_1 = __importDefault(require("mongoose"));
+const user_model_1 = require("../user/user.model");
 /**
  * ------------------ create Booking into db ----------------
  *
@@ -36,7 +36,7 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
     if (!userExists) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
-    payload.customer = userExists._id;
+    payload.user = userExists._id;
     // check is service is exists
     const service = yield service_model_1.Service.findById(payload.service);
     if (!service) {
@@ -49,7 +49,7 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
     }
     // check if the slot is available
     if (slot.isBooked !== booking_constant_1.BOOKING_TYPE.available) {
-        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Slot is not available");
+        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Slot is already booked!");
     }
     // check if service is belong to that slot
     if (String(slot.service) !== String(payload.service)) {
@@ -68,18 +68,14 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
         if (result.length === 0) {
             throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Faild to booked a service");
         }
-        return {
-            customer: userExists,
-            service: service,
-            slot: slot,
-            vehicleType: result[0].vehicleType,
-            vehicleBrand: result[0].vehicleBrand,
-            vehicleModel: result[0].vehicleModel,
-            manufacturingYear: result[0].manufacturingYear,
-            registrationPlate: result[0].registrationPlate,
-        };
+        yield session.commitTransaction();
+        yield session.endSession();
+        return result;
     }
-    catch (error) { }
+    catch (error) {
+        yield session.abortTransaction();
+        yield session.endSession();
+    }
 });
 /**
  * ------------------ get all Bookings from db ----------------
@@ -433,15 +429,7 @@ const updateBookingIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, f
     }
     // allowed fields to update and updated payload
     const updatedBookingData = {};
-    const allowedFields = [
-        "service",
-        "slot",
-        "vehicleType",
-        "vehicleBrand",
-        "vehicleModel",
-        "manufacturingYear",
-        "registrationPlate",
-    ];
+    const allowedFields = ["service", "slot", "vehicleInfo"];
     allowedFields.forEach((field) => {
         if (payload[field] !== undefined) {
             updatedBookingData[field] = payload[field];

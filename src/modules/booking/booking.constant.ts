@@ -27,5 +27,3 @@ export const bookingsSearchableFields = [
   "vehicleType",
   "vehicleBrand",
 ];
-
- 

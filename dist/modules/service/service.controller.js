@@ -37,6 +37,17 @@ const getAllServices = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: result,
     });
 }));
+// ------------------ get all slots of a service ------------------
+const getServiceWithSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const result = yield service_service_1.ServiceServices.getServiceWithSlotsFromDB((_a = req.params) === null || _a === void 0 ? void 0 : _a.id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Slots of service retrieved successfully",
+        data: result,
+    });
+}));
 // ------------------ get single Service ------------------
 const getSingleService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield service_service_1.ServiceServices.getSingleServiceFromDB(req.params.id);
@@ -71,6 +82,7 @@ const updateService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 exports.ServiceControllers = {
     createService,
     getAllServices,
+    getServiceWithSlots,
     getSingleService,
     deleteService,
     updateService,

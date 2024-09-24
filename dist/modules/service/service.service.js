@@ -18,6 +18,7 @@ const appError_1 = __importDefault(require("../../utils/appError"));
 const service_model_1 = require("./service.model");
 const QueryBuilder_1 = __importDefault(require("../../builders/QueryBuilder"));
 const service_constant_1 = require("./service.constant");
+const mongoose_1 = __importDefault(require("mongoose"));
 /**
  * ------------------ create service into db ----------------
  *
@@ -45,6 +46,49 @@ const getAllServicesFromDB = (query) => __awaiter(void 0, void 0, void 0, functi
     const result = yield serviceQuery.modelQuery;
     const meta = yield serviceQuery.countTotal();
     return { result, meta };
+});
+/**
+ * ------------------ get service with slots from db ----------------
+ *
+ * @param serviceId passed from controller
+ * @uses using aggregation pipeline to get all slots with service
+ * @returns returns service with all slots belong to this service
+ */
+const getServiceWithSlotsFromDB = (serviceId) => __awaiter(void 0, void 0, void 0, function* () {
+    const objectId = new mongoose_1.default.Types.ObjectId(serviceId);
+    const result = yield service_model_1.Service.aggregate([
+        {
+            $match: { _id: objectId },
+        },
+        {
+            // Lookup slots for the service
+            $lookup: {
+                from: "slots", // Name of the Slot collection
+                localField: "_id", // Field in the Service collection to match
+                foreignField: "service", // Field in the Slot collection to match
+                as: "slots", // Name of the output array with matching slots
+            },
+        },
+        {
+            // Add a field to filter slots based on the date
+            $addFields: {
+                slots: {
+                    $filter: {
+                        input: "$slots", // Array to filter
+                        as: "slot", // Alias for each slot in the array
+                        cond: {
+                            // Compare slot.date with the current date (formatted as YYYY-MM-DD)
+                            $gte: [
+                                "$$slot.date",
+                                new Date().toISOString().split("T")[0], // Current date as string in YYYY-MM-DD
+                            ],
+                        },
+                    },
+                },
+            },
+        },
+    ]);
+    return result[0];
 });
 /**
  * ------------------ get single Service from db ----------------
@@ -85,6 +129,7 @@ const updateServiceIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, f
 exports.ServiceServices = {
     createServiceIntoDB,
     getAllServicesFromDB,
+    getServiceWithSlotsFromDB,
     getSingleServiceFromDB,
     deleteServiceFromDB,
     updateServiceIntoDB,

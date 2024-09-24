@@ -1,28 +1,85 @@
 import z from "zod";
 
-// create user validation schema
-const createUserValidationSchema = z.object({
-  body: z.object({
-    name: z.string({ required_error: "name is required" }),
-    email: z
-      .string({ required_error: "email is required" })
-      .email("Please enter a valid email address"),
-    password: z.string({ required_error: "password is required" }),
-    phone: z.string({ required_error: "phone is required" }),
-    address: z.string({ required_error: "address is required" }),
+const userNameValidationSchema = z.object({
+  firstName: z.string({
+    invalid_type_error: "First name should be a string",
+    required_error: "Firstname is required",
+  }),
+  middleName: z.string().optional(),
+  lastName: z.string({
+    invalid_type_error: "Lastname should be a string",
+    required_error: "Lastname is required",
   }),
 });
 
-// update user validation schema
-const updateUserValidationSchema = z.object({
+// create user validations schema
+const createUserValidationsSchema = z.object({
   body: z.object({
-    name: z.string({ required_error: "name is required" }).optional(),
-    phone: z.string({ required_error: "phone is required" }).optional(),
-    address: z.string({ required_error: "address is required" }).optional(),
+    name: userNameValidationSchema,
+    email: z
+      .string({
+        required_error: "Email is required",
+      })
+      .email("Invalid email address"),
+    password: z.string().optional(),
+    age: z.number({
+      invalid_type_error: "Age should be a number",
+      required_error: "Age is required",
+    }),
+    gender: z.enum(["male", "female", "others"], {
+      invalid_type_error: "Gender is invalid",
+      required_error: "Gender is required",
+    }),
+    contact: z.string({
+      invalid_type_error: "Contact should be a string",
+      required_error: "Contact number is required",
+    }),
+    address: z.string({
+      invalid_type_error: "Address should be a string",
+      required_error: "Address is required",
+    }),
+  }),
+});
+
+// update user name validation schema
+const updateUserNameValidationSchema = userNameValidationSchema.partial();
+
+// update user validations schema
+const updateUserValidationsSchema = z.object({
+  body: z.object({
+    name: updateUserNameValidationSchema.optional(),
+    age: z
+      .number({
+        invalid_type_error: "Age should be a number",
+        required_error: "Age is required",
+      })
+      .optional(),
+    contact: z
+      .string({
+        invalid_type_error: "Contact should be a string",
+        required_error: "Contact number is required",
+      })
+      .optional(),
+    address: z
+      .string({
+        invalid_type_error: "Address should be a string",
+        required_error: "Address is required",
+      })
+      .optional(),
+  }),
+});
+
+// change user status schema
+const changeUserStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(["active", "blocked"], {
+      required_error: "User status is required",
+    }),
   }),
 });
 
 export const UserValidations = {
-  createUserValidationSchema,
-  updateUserValidationSchema,
+  createUserValidationsSchema,
+  updateUserValidationsSchema,
+  changeUserStatusSchema,
 };

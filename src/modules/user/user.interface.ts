@@ -1,33 +1,39 @@
 import { Model } from "mongoose";
-import { USER_ROLE } from "../auth/auth.constant";
 
-// type for user
+export type TUserName = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+};
+
+// user type
 export type TUser = {
-  name: string;
+  name: TUserName;
   email: string;
   password: string;
-  needsPasswordChange: boolean;
   passwordChangedAt?: Date;
-  phone: string;
-  role: "user" | "admin";
+  age: number;
+  gender: "male" | "female" | "others";
+  contact: string;
   address: string;
+  role: "user" | "admin";
+  status: "active" | "blocked";
+  profileImg?: string;
   isDeleted: boolean;
 };
 
-// user role type
-export type TUserRole = keyof typeof USER_ROLE;
-
-// user model
-export interface IUserModel extends Model<TUser> {
+// statics methods to check isPasswordMatch
+export interface IUser extends Model<TUser> {
   isUserExistsByemail(email: string): Promise<TUser | null>;
 
   isUserExistsById(_id: string): Promise<TUser | null>;
 
-  isPasswordMatched(
+  isPasswordMatch(
     plainPassword: string,
-    hashPassword: string
+    hashedPassword: string
   ): Promise<boolean>;
 
+  //check if the jwt issued before password change
   isJWTIssuedBeforePasswordChange(
     passwordChangedTimestamp: Date,
     jwtIssuedtimestamp: number

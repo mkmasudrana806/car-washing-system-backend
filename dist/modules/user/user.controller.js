@@ -13,55 +13,78 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserControllers = void 0;
+const http_status_1 = __importDefault(require("http-status"));
 const user_service_1 = require("./user.service");
 const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
-const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../utils/catchAsync"));
-// ------------------ get all users ------------------
-const getAllUsers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const userRole = req.user;
-    const result = yield user_service_1.UserServices.getAllUsersFromDB(userRole, req.query);
+// ------------------- create an user -------------------
+const createAnUser = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_service_1.UserServices.createAnUserIntoDB(req.file, req.body);
     (0, sendResponse_1.default)(res, {
-        success: true,
         statusCode: http_status_1.default.OK,
-        message: "All users are retrived successfully",
+        success: true,
+        message: "User created successfully",
         data: result,
     });
 }));
-// ------------------ get single user ------------------
-const getSingleUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_service_1.UserServices.getSingleUserFromDB(req.params.id);
+// ------------------- get all users -------------------
+const getAllUsers = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { meta, result } = yield user_service_1.UserServices.getAllUsersFromDB(req.query);
     (0, sendResponse_1.default)(res, {
-        success: true,
         statusCode: http_status_1.default.OK,
-        message: "User is retrived successfully",
+        success: true,
+        message: "All users retrieved successfully",
+        meta: meta,
         data: result,
     });
 }));
-// ------------------ delete an user ------------------
-const deleteUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// ------------------- get me -------------------
+const getMe = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, role } = req.user;
+    const result = yield user_service_1.UserServices.getMe(email, role);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "User is retrieved successfully",
+        data: result,
+    });
+}));
+// ------------------- delete an user -------------------
+const deleteUser = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_service_1.UserServices.deleteUserFromDB(req.params.id);
     (0, sendResponse_1.default)(res, {
-        success: true,
         statusCode: http_status_1.default.OK,
+        success: true,
         message: "User is deleted successfully",
         data: result,
     });
 }));
-// ------------------ update an user ------------------
-const updateUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_service_1.UserServices.updateUserIntoDB(req.params.id, req.body);
+// ------------------- update an user -------------------
+const updateUser = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUser = req.user;
+    const result = yield user_service_1.UserServices.updateUserIntoDB(currentUser, req.params.id, req.body);
     (0, sendResponse_1.default)(res, {
-        success: true,
         statusCode: http_status_1.default.OK,
+        success: true,
         message: "User is updated successfully",
         data: result,
     });
 }));
-// export all users controllers
+// ------------------- change user status -------------------
+const changeUserStatus = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_service_1.UserServices.changeUserStatusIntoDB(req.params.id, req.body);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "User status is changed successfull",
+        data: result,
+    });
+}));
 exports.UserControllers = {
+    createAnUser,
     getAllUsers,
-    getSingleUser,
+    getMe,
     deleteUser,
     updateUser,
+    changeUserStatus,
 };

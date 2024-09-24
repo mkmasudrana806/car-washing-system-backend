@@ -17,11 +17,7 @@ const mongoose_1 = require("mongoose");
 const booking_constant_1 = require("./booking.constant");
 const appError_1 = __importDefault(require("../../utils/appError"));
 const http_status_1 = __importDefault(require("http-status"));
-// Booking schema
-const bookingSchema = new mongoose_1.Schema({
-    customer: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "User" },
-    service: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "Service" },
-    slot: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "Slot" },
+const vehicleInfoSchema = new mongoose_1.Schema({
     vehicleType: {
         type: String,
         required: true,
@@ -31,6 +27,18 @@ const bookingSchema = new mongoose_1.Schema({
     vehicleModel: { type: String, required: true },
     manufacturingYear: { type: Number, required: true },
     registrationPlate: { type: String, required: true },
+});
+// Booking schema
+const bookingSchema = new mongoose_1.Schema({
+    user: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "User" },
+    service: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "Service" },
+    slot: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "Slot" },
+    vehicleInfo: {
+        type: vehicleInfoSchema,
+        required: true,
+    },
+    date: { type: Date, required: true, default: new Date() },
+    paymentId: { type: String, required: true, default: "default payment id" },
     isDeleted: { type: Boolean, default: false },
 }, {
     timestamps: true,

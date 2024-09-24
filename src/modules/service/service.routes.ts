@@ -5,9 +5,10 @@ import { ServiceControllers } from "./service.controller";
 import validateRequest from "../../middlewares/validateRequestData";
 import { ServiceValidations } from "./service.validation";
 import auth from "../../middlewares/auth";
-import { USER_ROLE } from "../auth/auth.constant";
+
 import { SlotValidations } from "../slot/slot.validation";
 import { SlotControllers } from "../slot/slot.controller";
+import { USER_ROLE } from "../auth/auth.constant";
 
 const router = express.Router();
 
@@ -25,6 +26,9 @@ router.get("/", ServiceControllers.getAllServices);
 // get single Service
 router.get("/:id", ServiceControllers.getSingleService);
 
+// get service with slots
+router.get("/service-slots/:id", ServiceControllers.getServiceWithSlots);
+
 // delete an Service
 router.delete("/:id", auth(USER_ROLE.admin), ServiceControllers.deleteService);
 
@@ -38,7 +42,7 @@ router.put(
 
 router.post(
   "/slots",
-  auth(USER_ROLE.admin),
+  // auth(USER_ROLE.admin),
   validateRequest(SlotValidations.createSlotValidationSchema),
   SlotControllers.createSlot
 );

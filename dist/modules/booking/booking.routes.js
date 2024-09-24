@@ -10,9 +10,9 @@ const booking_controller_1 = require("./booking.controller");
 const validateRequestData_1 = __importDefault(require("../../middlewares/validateRequestData"));
 const booking_validation_1 = require("./booking.validation");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
-const auth_constant_1 = require("../auth/auth.constant");
 const slot_validation_1 = require("../slot/slot.validation");
 const slot_controller_1 = require("../slot/slot.controller");
+const auth_constant_1 = require("../auth/auth.constant");
 const router = express_1.default.Router();
 const userRouter = express_1.default.Router();
 // create a Booking

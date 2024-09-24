@@ -13,58 +13,71 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserServices = void 0;
-const http_status_1 = __importDefault(require("http-status"));
-const appError_1 = __importDefault(require("../../utils/appError"));
-const user_model_1 = require("./user.model");
-const QueryBuilder_1 = __importDefault(require("../../builders/QueryBuilder"));
+const allowedFieldUpdatedData_1 = __importDefault(require("../../utils/allowedFieldUpdatedData"));
+const makeFlattenedObject_1 = __importDefault(require("../../utils/makeFlattenedObject"));
 const user_constant_1 = require("./user.constant");
+const user_model_1 = require("./user.model");
+const http_status_1 = __importDefault(require("http-status"));
+const config_1 = __importDefault(require("../../app/config"));
+const appError_1 = __importDefault(require("../../utils/appError"));
+const QueryBuilder_1 = __importDefault(require("../../builders/QueryBuilder"));
 /**
- * ------------------ get all users from db ----------------
- *
- * @param user jwt authentication token data, including email, userId, role
- * @param query req.query object containing query parameters
- * @validations check if the user has access only users data, and admin has access both user and admin data.
- * @returns if user role 'user', return only users data. otherwise return both user and admin data, those are not deleted also
+ * ----------------------- Create an user----------------------
+ * @param file image file to upload (optional)
+ * @param payload new user data
+ * @returns return newly created user
  */
-const getAllUsersFromDB = (user, query) => __awaiter(void 0, void 0, void 0, function* () {
-    let userQuery;
-    if ((user === null || user === void 0 ? void 0 : user.role) === "user") {
-        userQuery = new QueryBuilder_1.default(user_model_1.User.find({ role: "user", isDeleted: false }), query)
-            .search(user_constant_1.userSearchableFields)
-            .filter()
-            .paginate()
-            .sort()
-            .fieldsLimiting();
+const createAnUserIntoDB = (file, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    // set default password if password is not provided
+    payload.password = payload.password || config_1.default.default_password;
+    // check if the user already exists
+    const user = yield user_model_1.User.findOne({ email: payload.email });
+    if (user) {
+        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "User already exists");
     }
-    else {
-        userQuery = new QueryBuilder_1.default(user_model_1.User.find({ isDeleted: false }), query)
-            .search(user_constant_1.userSearchableFields)
-            .filter()
-            .paginate()
-            .sort()
-            .fieldsLimiting();
+    // set profileImg if image is provided
+    // if (file) {
+    //   const imageName = `${payload.email}-${payload.name.firstName}`;
+    //   const path = file.path;
+    //   const uploadedImage: any = await sendImageToCloudinary(path, imageName);
+    //   payload.profileImg = uploadedImage.secure_url;
+    // }
+    // set placeholder image if image is not provided
+    if (!file || payload.profileImg === "") {
+        payload.profileImg =
+            "https://avatar.iran.liara.run/public/boy?username=Ash";
     }
+    const result = yield user_model_1.User.create(payload);
+    return result;
+});
+/**
+ * ----------------------- get all users ----------------------
+ * @return return all users
+ */
+const getAllUsersFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    const userQuery = new QueryBuilder_1.default(user_model_1.User.find(), query)
+        .search(user_constant_1.searchableFields)
+        .filter()
+        .sort()
+        .paginate()
+        .fieldsLimiting();
+    const meta = yield userQuery.countTotal();
     const result = yield userQuery.modelQuery;
-    return result;
+    return { meta, result };
 });
 /**
- * ------------------ get single user from db ----------------
- *
- * @param id user id provided by mongodb
- * @validation if user is deleted, throw an error
- * @returns return an user
+ * -----------------  get me  -----------------
+ * @param email email address
+ * @param role user role
+ * @returns own user data based on jwt payload data
  */
-const getSingleUserFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_model_1.User.findById(id);
-    if (result === null || result === void 0 ? void 0 : result.isDeleted) {
-        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is deleted");
-    }
+const getMe = (email, role) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_model_1.User.findOne({ email, role });
     return result;
 });
 /**
- * ------------------ delete an user from db ----------------
- *
- * @param id user id provided by mongodb
+ * --------------- delete an user form db ----------------
+ * @param id user id
  * @returns return deleted user data
  */
 const deleteUserFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
@@ -72,36 +85,67 @@ const deleteUserFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () 
     return result;
 });
 /**
- * ------------------ update an user into db ----------------
- * @param id user id provided by mongodb
- * @param payload updated user data
- * @validations define allowed fields and filter out new updated object.
- * check if the user is exists and not deleted
- * @returns return updated data
+ * --------------- update an user form db ----------------
+ * @param id user id
+ * @param payload update user data
+ * @featurs admin can change own and user data. user can change own data only
+ * @returns return updated user data
  */
-const updateUserIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // Allowed fields to update data
-    const allowedFields = ["name", "phone", "address"];
-    // Filter payload to only include allowed fields
-    const updateData = {};
-    allowedFields.forEach((field) => {
-        if (payload[field] !== undefined) {
-            updateData[field] = payload[field];
-        }
-    });
-    // Check if user exists and is not deleted
-    if (!(yield user_model_1.User.isUserExistsById(id))) {
-        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found");
+const updateUserIntoDB = (currentUser, id, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    // check if the user exists not deleted or blocked
+    const user = yield user_model_1.User.findById(id);
+    if (!user) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "Requested user not found!");
     }
-    const result = yield user_model_1.User.findByIdAndUpdate(id, updateData, {
+    if (user.isDeleted) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is already deleted!");
+    }
+    if (user.status === "blocked") {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is already blocked!");
+    }
+    // check if current logged user and request not same and role is user.
+    // means an user cna not update another user data
+    if (currentUser.email !== (user === null || user === void 0 ? void 0 : user.email) && currentUser.role === "user") {
+        throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "You are not authorized!");
+    }
+    // filter allowed fileds only
+    const allowedFieldData = (0, allowedFieldUpdatedData_1.default)(user_constant_1.allowedFieldsToUpdate, payload);
+    // make flattened object
+    const flattenedData = (0, makeFlattenedObject_1.default)(allowedFieldData);
+    const result = yield user_model_1.User.findByIdAndUpdate(id, flattenedData, {
         new: true,
-        runValidators: true, // Run mongoose schema validation before updating new data
+        runValidators: true,
+    });
+    return result;
+});
+/**
+ * -------------------- change user status ----------------------
+ * @param id user id
+ * @param payload user status payload
+ * @validatios check if the user exists,not deleted. only admin can change user status
+ * @note admin can not change own status. admin can change only user status
+ * @returns return updated user status
+ */
+const changeUserStatusIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    // check if user exists, not deleted. find user that has role as user
+    const user = yield user_model_1.User.findOne({ _id: id, role: "user" });
+    if (!user) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
+    }
+    if (user.isDeleted) {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+    }
+    const result = yield user_model_1.User.findByIdAndUpdate(id, payload, {
+        new: true,
+        runValidators: true,
     });
     return result;
 });
 exports.UserServices = {
+    createAnUserIntoDB,
     getAllUsersFromDB,
-    getSingleUserFromDB,
+    getMe,
     deleteUserFromDB,
     updateUserIntoDB,
+    changeUserStatusIntoDB,
 };

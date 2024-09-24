@@ -12,100 +12,206 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authServices = void 0;
+exports.AuthServices = void 0;
 const http_status_1 = __importDefault(require("http-status"));
-const appError_1 = __importDefault(require("../../utils/appError"));
-const user_model_1 = require("../user/user.model");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const sendEmail_1 = __importDefault(require("../../utils/sendEmail"));
+const appError_1 = __importDefault(require("../../utils/appError"));
 const config_1 = __importDefault(require("../../app/config"));
-const auth_utils_1 = require("./auth.utils");
+const user_model_1 = require("../user/user.model");
 /**
- * ----------------- register user into database -----------------------
- *
- * @param payload new user data
- * @validation check if user is already registered by the same email address
- * @returns return registered user
- */
-const RegisterUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByemail(payload === null || payload === void 0 ? void 0 : payload.email);
-    if (user) {
-        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is already exists!");
-    }
-    const result = yield user_model_1.User.create(payload);
-    return result;
-});
-/**
- * ----------------- login user into database -----------------------
- *
- * @param payload user login information ( email and password )
- * @validation check if user is exists and not deleted and password is correct
- * @returns return new user info and access token
+ * -------------------- Login user into DB ---------------------
+ * @param email email address
+ * @param password password
+ * @validations check if the user exists, not deleted or blocked and password is correct
+ * @returns return access token
  */
 const loginUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByemail(payload === null || payload === void 0 ? void 0 : payload.email);
+    const user = yield user_model_1.User.findOne({ email: payload === null || payload === void 0 ? void 0 : payload.email });
+    // check if user exists, not deleted or blocked
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
-    // check if the user is already deleted
-    if (user === null || user === void 0 ? void 0 : user.isDeleted) {
+    if (user.isDeleted) {
         throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
     }
-    // checking if the password is correct
-    if (!(yield user_model_1.User.isPasswordMatched(payload === null || payload === void 0 ? void 0 : payload.password, user === null || user === void 0 ? void 0 : user.password))) {
-        throw new appError_1.default(http_status_1.default.FORBIDDEN, "Password is not matched!");
+    if (user.status === "blocked") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already blocked!");
     }
-    // jwt data
+    // check if the password is correct
+    if (!(yield user_model_1.User.isPasswordMatch(payload === null || payload === void 0 ? void 0 : payload.password, user.password))) {
+        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Password is incorrect!");
+    }
+    // make access token and refresh token
     const jwtPayload = {
         userId: user === null || user === void 0 ? void 0 : user._id,
         email: user === null || user === void 0 ? void 0 : user.email,
         role: user === null || user === void 0 ? void 0 : user.role,
     };
-    // access granted: Send AccessToken
-    const accessToken = (0, auth_utils_1.createToken)(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expires_in);
-    return {
-        user,
-        accessToken,
-    };
+    const accessToken = jsonwebtoken_1.default.sign(jwtPayload, config_1.default.jwt_access_secret, {
+        expiresIn: config_1.default.jwt_access_expires_in,
+    });
+    const refreshToken = jsonwebtoken_1.default.sign(jwtPayload, config_1.default.jwt_refresh_secret, {
+        expiresIn: config_1.default.jwt_refresh_expires_in,
+    });
+    return { accessToken, refreshToken };
 });
-// --------------- change password --------------------
 /**
- *
+ * -------------------- Change user password into DB ---------------------
  * @param userData jwt user data
- * @param payload old and new password data
- * @validations check if user is exists and not deleted and password is correct
- * @returns return updated user information
+ * @param payload old and new password payload
+ * @validations check if the user exists, not deleted or blocked and password is correct.
+ * @returns return updated user data
  */
-const changePasswordIntoDB = (userData, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // check if the user is exists
-    const user = yield user_model_1.User.isUserExistsByemail(userData.email);
+const changeUserPassword = (userData, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.User.findOne({
+        email: userData === null || userData === void 0 ? void 0 : userData.email,
+        role: userData === null || userData === void 0 ? void 0 : userData.role,
+    });
+    // check if user exists, not deleted or blocked
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
-    // check if the user is already deleted
-    if (user === null || user === void 0 ? void 0 : user.isDeleted) {
+    if (user.isDeleted) {
         throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
     }
-    // checking if the password is correct
-    if (!(yield user_model_1.User.isPasswordMatched(payload === null || payload === void 0 ? void 0 : payload.oldPassword, user === null || user === void 0 ? void 0 : user.password))) {
-        throw new appError_1.default(http_status_1.default.FORBIDDEN, "Password is not matched!");
+    if (user.status === "blocked") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already blocked!");
+    }
+    // check if the password is correct
+    if (!(yield user_model_1.User.isPasswordMatch(payload === null || payload === void 0 ? void 0 : payload.oldPassword, user.password))) {
+        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Password is incorrect!");
     }
     // hash the new password
-    const hashPassword = yield bcrypt_1.default.hash(payload.newPassword, Number(config_1.default.bcrypt_salt_rounds));
+    const hashedPassword = yield bcrypt_1.default.hash(payload.newPassword, Number(config_1.default.bcrypt_salt_rounds));
     // update the password
     const result = yield user_model_1.User.findOneAndUpdate({
-        email: userData.email,
-        role: userData.role,
+        email: userData === null || userData === void 0 ? void 0 : userData.email,
+        role: userData === null || userData === void 0 ? void 0 : userData.role,
     }, {
-        password: hashPassword,
+        password: hashedPassword,
         needsPasswordChange: false,
         passwordChangedAt: new Date(),
-    }, { new: true, runValidators: true });
+    }, { new: true });
     return result;
 });
-exports.authServices = {
-    RegisterUserIntoDB,
+/**
+ * --------------------- forgot password ---------------------
+ * @param email email address
+ * @validations check if the user exists, not deleted or blocked
+ * @features send a reset link to the user email address using nodemailer
+ */
+const forgotPassword = (email) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.User.findOne({ email });
+    // check if user exists, not deleted or blocked
+    if (!user) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
+    }
+    if (user.isDeleted) {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+    }
+    if (user.status === "blocked") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already blocked!");
+    }
+    // jwt payload and create an access token
+    const jwtPayload = {
+        userId: user === null || user === void 0 ? void 0 : user._id,
+        email: user === null || user === void 0 ? void 0 : user.email,
+        role: user === null || user === void 0 ? void 0 : user.role,
+    };
+    const resetToken = jsonwebtoken_1.default.sign(jwtPayload, config_1.default.jwt_access_secret, {
+        expiresIn: "10m",
+    });
+    // send reset link to email address
+    const resetUILink = `${config_1.default.reset_password_ui_link}?email=${email}&token=${resetToken}`;
+    const result = yield (0, sendEmail_1.default)(user === null || user === void 0 ? void 0 : user.email, `<p>${resetUILink}</p>`);
+    return result;
+});
+/**
+ * --------------------- reset password into db ---------------------
+ * @param email email address
+ * @param newPassword new password from client
+ * @param token token from mail inbox
+ * @returns return updated user data
+ */
+const resetPasswordIntoDB = (email, newPassword, token) => __awaiter(void 0, void 0, void 0, function* () {
+    // check if the token is given
+    if (!token) {
+        throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
+    }
+    // decoded the token
+    const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_access_secret);
+    if (!decoded || decoded.email !== email) {
+        throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
+    }
+    const user = yield user_model_1.User.findOne({ email });
+    // check if user exists, not deleted or blocked
+    if (!user) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
+    }
+    if (user.isDeleted) {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+    }
+    if (user.status === "blocked") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already blocked!");
+    }
+    // hash the new password
+    const hashedPassword = yield bcrypt_1.default.hash(newPassword, Number(config_1.default.bcrypt_salt_rounds));
+    const result = yield user_model_1.User.findOneAndUpdate({ email }, {
+        password: hashedPassword,
+        passwordChangedAt: new Date(),
+        needsPasswordChange: false,
+    }, { new: true });
+    return result;
+});
+/**
+ * --------------------- refresh token setup -------------------------
+ * @param token refresh token
+ * @validations check if the refresh token and user valid. jwt is not issued before password change timestamp
+ * @returns return access token
+ */
+const refreshTokenSetup = (token) => __awaiter(void 0, void 0, void 0, function* () {
+    // check if the token is given
+    if (!token) {
+        throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
+    }
+    // decoded the token
+    const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_refresh_secret);
+    if (!decoded) {
+        throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!");
+    }
+    const user = yield user_model_1.User.findOne({ email: decoded.email });
+    // check if user exists, not deleted or blocked
+    if (!user) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
+    }
+    if (user.isDeleted) {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+    }
+    if (user.status === "blocked") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already blocked!");
+    }
+    // check if jwt is not issued before password change
+    if (user.passwordChangedAt &&
+        user_model_1.User.isJWTIssuedBeforePasswordChange(user.passwordChangedAt, decoded.iat)) {
+        throw new appError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized access!, your refresh token is invalid!");
+    }
+    // create an access token
+    const jwtPayload = {
+        userId: user === null || user === void 0 ? void 0 : user._id,
+        email: user === null || user === void 0 ? void 0 : user.email,
+        role: user === null || user === void 0 ? void 0 : user.role,
+    };
+    const accessToken = jsonwebtoken_1.default.sign(jwtPayload, config_1.default.jwt_access_secret, {
+        expiresIn: config_1.default.jwt_access_expires_in,
+    });
+    return { accessToken };
+});
+exports.AuthServices = {
     loginUserIntoDB,
-    changePasswordIntoDB,
+    changeUserPassword,
+    forgotPassword,
+    resetPasswordIntoDB,
+    refreshTokenSetup,
 };

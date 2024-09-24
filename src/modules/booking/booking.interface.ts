@@ -14,15 +14,21 @@ type TVehicle =
   | "tractor";
 
 export type TBooking = {
-  customer: Types.ObjectId;
+  user: Types.ObjectId;
   service: Types.ObjectId;
   slot: Types.ObjectId;
+  vehicleInfo: TVehicleInfo;
+  date: Date;
+  paymentId: string;
+  isDeleted: boolean;
+};
+
+export type TVehicleInfo = {
   vehicleType: TVehicle;
   vehicleBrand: string;
   vehicleModel: string;
   manufacturingYear: number;
   registrationPlate: string;
-  isDeleted: boolean;
 };
 
 // isBookingExistsByid interface for statics model

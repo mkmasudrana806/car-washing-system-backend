@@ -1,37 +1,54 @@
-// handle all user routes
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { UserControllers } from "./user.controller";
-import validateRequest from "../../middlewares/validateRequestData";
+
 import { UserValidations } from "./user.validation";
 import auth from "../../middlewares/auth";
-import { USER_ROLE } from "../auth/auth.constant";
 
+import httpStatus from "http-status";
+import AppError from "../../utils/appError";
+import validateRequest from "../../middlewares/validateRequestData";
+import { upload } from "../../utils/upload";
 const router = express.Router();
 
-// get all users
-router.get(
-  "/",
-  // auth(USER_ROLE.user, USER_ROLE.admin),
-  UserControllers.getAllUsers
+// create an user
+router.post(
+  "/create-user",
+  upload.single("file"), // file uploading
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.body?.data) {
+      req.body = JSON.parse(req.body?.data);
+      next();
+    } else {
+      throw new AppError(httpStatus.BAD_REQUEST, "Please provide user data");
+    }
+  },
+  validateRequest(UserValidations.createUserValidationsSchema),
+  UserControllers.createAnUser
 );
 
-// get single user
-router.get(
-  "/:id",
-  auth(USER_ROLE.user, USER_ROLE.admin),
-  UserControllers.getSingleUser
-);
+// get all users
+router.get("/", auth("admin"), UserControllers.getAllUsers);
+
+// get me route
+router.get("/getMe", auth("user", "admin"), UserControllers.getMe);
 
 // delete an user
-router.delete("/:id", auth(USER_ROLE.admin), UserControllers.deleteUser);
+router.delete("/:id", auth("admin"), UserControllers.deleteUser);
 
 // update an user
 router.patch(
   "/:id",
-  auth(USER_ROLE.user, USER_ROLE.admin),
-  validateRequest(UserValidations.updateUserValidationSchema),
+  auth("user", "admin"),
+  validateRequest(UserValidations.updateUserValidationsSchema),
   UserControllers.updateUser
 );
 
-// export routes
-export const userRoutes = router;
+// change user status
+router.post(
+  "/change-status/:id",
+  auth("admin"),
+  validateRequest(UserValidations.changeUserStatusSchema),
+  UserControllers.changeUserStatus
+);
+
+export const UserRoutes = router;

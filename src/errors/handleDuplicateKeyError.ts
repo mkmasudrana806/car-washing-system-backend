@@ -13,7 +13,7 @@ const handleDuplicateKeyError = (err: any): TGenericErrorResponse => {
     },
   ];
 
-  const statusCode = 401;
+  const statusCode = 400;
   return {
     message: "duplicate key error",
     statusCode,
