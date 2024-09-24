@@ -37,6 +37,7 @@ const bookingSchema = new mongoose_1.Schema({
         type: vehicleInfoSchema,
         required: true,
     },
+    amount: { type: Number, required: true },
     date: { type: Date, required: true, default: new Date() },
     paymentId: { type: String, required: true, default: "default payment id" },
     isDeleted: { type: Boolean, default: false },

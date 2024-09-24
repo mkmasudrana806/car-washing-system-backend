@@ -26,6 +26,10 @@ const createBookingValidationSchema = zod_1.default.object({
         service: zod_1.default.string({ required_error: "Service is required" }),
         slot: zod_1.default.string({ required_error: "Slot is required" }),
         vehicleInfo: bookingInfoValidationSchema,
+        amount: zod_1.default.number({
+            required_error: "Amount is required",
+            invalid_type_error: "Amount should be number",
+        }),
     }),
 });
 // update booking info schema

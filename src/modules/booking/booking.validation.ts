@@ -21,6 +21,10 @@ const createBookingValidationSchema = z.object({
     service: z.string({ required_error: "Service is required" }),
     slot: z.string({ required_error: "Slot is required" }),
     vehicleInfo: bookingInfoValidationSchema,
+    amount: z.number({
+      required_error: "Amount is required",
+      invalid_type_error: "Amount should be number",
+    }),
   }),
 });
 

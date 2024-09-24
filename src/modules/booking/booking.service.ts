@@ -8,6 +8,8 @@ import httpStatus from "http-status";
 import { BOOKING_TYPE, bookingsSearchableFields } from "./booking.constant";
 import mongoose from "mongoose";
 import { User } from "../user/user.model";
+import Stripe from "stripe";
+import config from "../../app/config";
 
 /**
  * ------------------ create Booking into db ----------------
@@ -51,6 +53,29 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
     );
   }
 
+  // make stripe payment
+  const stripe = new Stripe(config.stripe_secret_key as string);
+  const line_items = [
+    {
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: String(payload.slot),
+        },
+        unit_amount: payload.amount * 100,
+      },
+      quantity: 1,
+    },
+  ];
+  const paymentSession = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    line_items: line_items,
+    success_url: "http://localhost:5173/user/purchase-success",
+    cancel_url: "http://localhost:5173/user/purchase-faild",
+  });
+
+ 
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -73,7 +98,7 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
 
     await session.commitTransaction();
     await session.endSession();
-    return result;
+    return paymentSession.id;
   } catch (error) {
     await session.abortTransaction();
     await session.endSession();

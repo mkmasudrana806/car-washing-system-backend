@@ -21,6 +21,8 @@ const http_status_1 = __importDefault(require("http-status"));
 const booking_constant_1 = require("./booking.constant");
 const mongoose_1 = __importDefault(require("mongoose"));
 const user_model_1 = require("../user/user.model");
+const stripe_1 = __importDefault(require("stripe"));
+const config_1 = __importDefault(require("../../app/config"));
 /**
  * ------------------ create Booking into db ----------------
  *
@@ -55,6 +57,27 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
     if (String(slot.service) !== String(payload.service)) {
         throw new appError_1.default(http_status_1.default.BAD_REQUEST, "this service is not belong to that slot!");
     }
+    // make stripe payment
+    const stripe = new stripe_1.default(config_1.default.stripe_secret_key);
+    const line_items = [
+        {
+            price_data: {
+                currency: "usd",
+                product_data: {
+                    name: String(payload.slot),
+                },
+                unit_amount: payload.amount * 100,
+            },
+            quantity: 1,
+        },
+    ];
+    const paymentSession = yield stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: line_items,
+        success_url: "http://localhost:5173/user/purchase-success",
+        cancel_url: "http://localhost:5173/user/purchase-faild",
+    });
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
@@ -70,7 +93,7 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
         }
         yield session.commitTransaction();
         yield session.endSession();
-        return result;
+        return paymentSession.id;
     }
     catch (error) {
         yield session.abortTransaction();

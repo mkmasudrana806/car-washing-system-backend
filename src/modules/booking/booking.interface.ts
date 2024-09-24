@@ -18,6 +18,7 @@ export type TBooking = {
   service: Types.ObjectId;
   slot: Types.ObjectId;
   vehicleInfo: TVehicleInfo;
+  amount: number;
   date: Date;
   paymentId: string;
   isDeleted: boolean;
