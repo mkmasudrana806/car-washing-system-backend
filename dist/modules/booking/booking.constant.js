@@ -18,13 +18,13 @@ exports.BOOKING_TYPE = {
     booked: "booked",
     cancelled: "canceled",
 };
-// customer.name, customer.email, customer.phone, service.name, service.description, booking.vehicleType, booking.vehicleBrand
+// user.name, user.email, user.phone, service.name, service.description, booking.vehicleType, booking.vehicleBrand
 exports.bookingsSearchableFields = [
-    "customer.name",
-    "customer.email",
-    "customer.phone",
+    "user.name.firstName",
+    "user.email",
+    "user.phone",
     "service.name",
     "service.description",
-    "vehicleType",
-    "vehicleBrand",
+    "vehicleInfo.vehicleType",
+    "vehicleInfo.vehicleBrand",
 ];

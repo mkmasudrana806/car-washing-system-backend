@@ -75,7 +75,6 @@ const createBookingIntoDB = async (user: JwtPayload, payload: TBooking) => {
     cancel_url: "http://localhost:5173/user/purchase-faild",
   });
 
- 
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
@@ -119,15 +118,23 @@ const getAllBookingsFromDB = async (query: Record<string, unknown>) => {
   // as i use aggregation pipeline, that is why i am not use QueryBuilder here.
   // because i want to implement search functionality inside customer, service and slot also.
 
-  // searching
+  // ------------- date filters
+  let matchCondition: Partial<{ isDeleted: boolean; date: object }> = {
+    isDeleted: false,
+  };
+  if (query?.date) {
+    matchCondition.date = { $gte: new Date(query?.date as string) };
+  }
+
+  // ------------- searching
   const searchRegex = new RegExp(query.searchTerm as string, "i");
 
-  // pagination
+  //----------- pagination
   const limit = Number(query.limit) || 10;
   const page = Number(query.page) || 1;
   const skip = (page - 1) * limit;
 
-  // sort based on query parameter
+  // ------------ sort based on query parameter
   let sort = (query.sort as string) || "-createdAt";
   let sortField: string = "createdAt"; // by default
   let sortOrder: 1 | -1 = -1; // descending order by default
@@ -140,13 +147,13 @@ const getAllBookingsFromDB = async (query: Record<string, unknown>) => {
     sortOrder = 1;
   }
 
-  // fields limitng
+  // ------------ fields limitng
   let projectFields: Record<string, 0 | 1> = {};
   if (query.fields) {
     const isExclusion = (query.fields as string).startsWith("-");
     const fields = (query.fields as string).replace("-", "").split(",");
 
-    // make project fields object
+    // --------- make project fields object
     fields.forEach((field) => {
       projectFields[field.trim()] = isExclusion ? 0 : 1;
     });
@@ -160,19 +167,17 @@ const getAllBookingsFromDB = async (query: Record<string, unknown>) => {
   const result = await Booking.aggregate([
     // filter out those bookings is deleted true
     {
-      $match: {
-        isDeleted: false,
-      },
+      $match: matchCondition,
     },
     {
       $lookup: {
-        from: "users", // Collection name where customers are stored
-        localField: "customer",
+        from: "users", // Collection name where user are stored
+        localField: "user",
         foreignField: "_id",
-        as: "customer",
+        as: "user",
       },
     },
-    { $unwind: "$customer" }, // convert that customers array to object
+    { $unwind: "$user" }, // convert that user array to object
     {
       $lookup: {
         from: "services",

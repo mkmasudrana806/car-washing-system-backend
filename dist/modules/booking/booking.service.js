@@ -113,13 +113,20 @@ const createBookingIntoDB = (user, payload) => __awaiter(void 0, void 0, void 0,
 const getAllBookingsFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
     // as i use aggregation pipeline, that is why i am not use QueryBuilder here.
     // because i want to implement search functionality inside customer, service and slot also.
-    // searching
+    // ------------- date filters
+    let matchCondition = {
+        isDeleted: false,
+    };
+    if (query === null || query === void 0 ? void 0 : query.date) {
+        matchCondition.date = { $gte: new Date(query === null || query === void 0 ? void 0 : query.date) };
+    }
+    // ------------- searching
     const searchRegex = new RegExp(query.searchTerm, "i");
-    // pagination
+    //----------- pagination
     const limit = Number(query.limit) || 10;
     const page = Number(query.page) || 1;
     const skip = (page - 1) * limit;
-    // sort based on query parameter
+    // ------------ sort based on query parameter
     let sort = query.sort || "-createdAt";
     let sortField = "createdAt"; // by default
     let sortOrder = -1; // descending order by default
@@ -131,12 +138,12 @@ const getAllBookingsFromDB = (query) => __awaiter(void 0, void 0, void 0, functi
         sortField = sort;
         sortOrder = 1;
     }
-    // fields limitng
+    // ------------ fields limitng
     let projectFields = {};
     if (query.fields) {
         const isExclusion = query.fields.startsWith("-");
         const fields = query.fields.replace("-", "").split(",");
-        // make project fields object
+        // --------- make project fields object
         fields.forEach((field) => {
             projectFields[field.trim()] = isExclusion ? 0 : 1;
         });
@@ -150,19 +157,17 @@ const getAllBookingsFromDB = (query) => __awaiter(void 0, void 0, void 0, functi
     const result = yield booking_model_1.Booking.aggregate([
         // filter out those bookings is deleted true
         {
-            $match: {
-                isDeleted: false,
-            },
+            $match: matchCondition,
         },
         {
             $lookup: {
-                from: "users", // Collection name where customers are stored
-                localField: "customer",
+                from: "users", // Collection name where user are stored
+                localField: "user",
                 foreignField: "_id",
-                as: "customer",
+                as: "user",
             },
         },
-        { $unwind: "$customer" }, // convert that customers array to object
+        { $unwind: "$user" }, // convert that user array to object
         {
             $lookup: {
                 from: "services",
