@@ -19,6 +19,7 @@ const serviceSchema = new Schema<TService, IServiceModel>(
     featured: {
       type: Boolean,
       required: true,
+      default: false,
     },
     serviceImgUrl: { type: String, required: true },
     isDeleted: {

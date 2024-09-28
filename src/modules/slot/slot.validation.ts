@@ -10,7 +10,7 @@ const timeFormatValidation = z
       return result.test(time);
     },
     {
-      message: "time format must be HH:MM 24 hr format",
+      message: "time format must be HH:MM 24 hr format and less than 24:00",
     }
   );
 

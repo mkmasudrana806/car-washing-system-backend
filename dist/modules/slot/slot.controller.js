@@ -27,6 +27,16 @@ const createSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         data: result,
     });
 }));
+// ------------------ get all Slots ------------------
+const getAllSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield slot_service_1.SlotServices.getAllSlotsFromDB(req.query);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "All Slots are retrived successfully",
+        data: result,
+    });
+}));
 // ------------------ get available slots ------------------
 const getAvailableSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield slot_service_1.SlotServices.getAvailableSlotsFromDB(req.query);
@@ -37,9 +47,9 @@ const getAvailableSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: result,
     });
 }));
-// ------------------ get all Slots ------------------
-const getAllSlots = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield slot_service_1.SlotServices.getAllSlotsFromDB();
+// ------------------ get all Slots with service ------------------
+const getAllSlotsWithService = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield slot_service_1.SlotServices.getAllSlotsWithServiceFromDB();
     (0, sendResponse_1.default)(res, {
         success: true,
         statusCode: http_status_1.default.OK,
@@ -67,11 +77,23 @@ const deleteSlot = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, voi
         data: result,
     });
 }));
+// ------------------ toggle slot status ------------------
+const slotStatusToggle = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield slot_service_1.SlotServices.slotStatusToggleIntoDB(req.params.id);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Slot is toggled successfully",
+        data: result,
+    });
+}));
 // export all Slots controllers
 exports.SlotControllers = {
     createSlot,
     getAllSlots,
+    getAllSlotsWithService,
     getAvailableSlots,
     getSingleSlot,
     deleteSlot,
+    slotStatusToggle,
 };

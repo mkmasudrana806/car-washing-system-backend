@@ -11,7 +11,7 @@ const router = express.Router();
 
 // create a Slot
 router.post(
-  "/create-Slot",
+  "/create-slots",
   auth(USER_ROLE.admin),
   validateRequest(SlotValidations.createSlotValidationSchema),
   SlotControllers.createSlot
@@ -20,14 +20,20 @@ router.post(
 // get all Slots
 router.get("/", SlotControllers.getAllSlots);
 
+// get all slots with service
+router.get("/slots", SlotControllers.getAllSlotsWithService);
+
 // get all available slots
 router.get("/availability", SlotControllers.getAvailableSlots);
 
 // get single Slot
 router.get("/:id", SlotControllers.getSingleSlot);
 
-// delete an Slot
+// delete a Slot
 router.delete("/:id", auth(USER_ROLE.admin), SlotControllers.deleteSlot);
+
+// toggle slot status available to canceled if slot is not booked
+router.patch("/toggle-slot-status/:id", SlotControllers.slotStatusToggle);
 
 // export routes
 export const slotRoutes = router;

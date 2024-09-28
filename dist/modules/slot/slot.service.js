@@ -80,7 +80,54 @@ const createSlotIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function
  * @returns all slots as group with corresponding service details and total slots count.
  * also filter out those slots, those corresponding service isDeleted false
  */
-const getAllSlotsFromDB = () => __awaiter(void 0, void 0, void 0, function* () {
+const getAllSlotsFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    // ------------ fields limitng
+    let projectFields = {};
+    if (query.fields) {
+        const isExclusion = query.fields.startsWith("-");
+        const fields = query.fields.replace("-", "").split(",");
+        // --------- make project fields object
+        fields.forEach((field) => {
+            projectFields[field.trim()] = isExclusion ? 0 : 1;
+        });
+    }
+    else {
+        projectFields = {
+            __v: 0,
+        };
+    }
+    const result = yield slot_model_1.Slot.aggregate([
+        {
+            $lookup: {
+                from: "services",
+                localField: "service",
+                foreignField: "_id",
+                as: "service",
+            },
+        },
+        // service array to object mapping
+        {
+            $unwind: "$service",
+        },
+        // again filter slots based on service isDeleted false
+        {
+            $match: {
+                "service.isDeleted": false,
+            },
+        },
+        // fields limiting
+        {
+            $project: projectFields,
+        },
+    ]);
+    return result;
+});
+/**
+ * ------------------ get all Slots with service from db ----------------
+ *
+ * @returns return all slots with corresponding service by making group.
+ */
+const getAllSlotsWithServiceFromDB = () => __awaiter(void 0, void 0, void 0, function* () {
     // group by service. each service details and total slots with count
     const result = yield slot_model_1.Slot.aggregate([
         {
@@ -113,17 +160,32 @@ const getAllSlotsFromDB = () => __awaiter(void 0, void 0, void 0, function* () {
  * @validation keep only slots, those service isDeleted false
  * @returns all the available slots with corresponding service details
  */
-const getAvailableSlotsFromDB = (req) => __awaiter(void 0, void 0, void 0, function* () {
+const getAvailableSlotsFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
     // make query for exact matching slots
-    let query = { isBooked: booking_constant_1.BOOKING_TYPE.available };
-    if (req === null || req === void 0 ? void 0 : req.serviceId)
-        query.service = req.serviceId;
-    if (req === null || req === void 0 ? void 0 : req.date)
-        query.date = req.date;
+    let matchQuery = { isBooked: booking_constant_1.BOOKING_TYPE.available };
+    if (query === null || query === void 0 ? void 0 : query.serviceId)
+        matchQuery.service = query.serviceId;
+    if (query === null || query === void 0 ? void 0 : query.date)
+        matchQuery.date = query.date;
+    // ------------ fields limitng
+    let projectFields = {};
+    if (query.fields) {
+        const isExclusion = query.fields.startsWith("-");
+        const fields = query.fields.replace("-", "").split(",");
+        // --------- make project fields object
+        fields.forEach((field) => {
+            projectFields[field.trim()] = isExclusion ? 0 : 1;
+        });
+    }
+    else {
+        projectFields = {
+            __v: 0,
+        };
+    }
     const result = yield slot_model_1.Slot.aggregate([
         // exact matching slots
         {
-            $match: query,
+            $match: matchQuery,
         },
         // populate
         {
@@ -143,6 +205,10 @@ const getAvailableSlotsFromDB = (req) => __awaiter(void 0, void 0, void 0, funct
             $match: {
                 "service.isDeleted": false,
             },
+        },
+        // fields limiting
+        {
+            $project: projectFields,
         },
     ]);
     return result;
@@ -166,22 +232,54 @@ const getSingleSlotFromDB = (id) => __awaiter(void 0, void 0, void 0, function* 
  *  ------------------ delete an Slot from db ----------------
  *
  * @param id slot id provided by mongodb
- * @validations don't delete a slot if it is already booked
+ * @validations don't delete a slot if it is already booked, also check when updating
  * @returns deleted slot
  */
 const deleteSlotFromDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
     // check if slot is already booked
     const slot = yield slot_model_1.Slot.findById(id);
+    if (!slot) {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "Slot is not found");
+    }
     if ((slot === null || slot === void 0 ? void 0 : slot.isBooked) === booking_constant_1.BOOKING_TYPE.booked) {
         throw new appError_1.default(http_status_1.default.BAD_REQUEST, "You can not delete this slot, as it is already booked!");
     }
-    const result = yield slot_model_1.Slot.findByIdAndDelete(id, { new: true });
+    const result = yield slot_model_1.Slot.findOneAndDelete({
+        _id: id,
+        isBooked: { $ne: booking_constant_1.BOOKING_TYPE.booked }, // ensure slot not booked
+    });
+    if (!result) {
+        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "Slot is deleted or already booked");
+    }
+    return result;
+});
+/**
+ *  ------------------ toggle slot ----------------
+ *
+ * @param id slot id provided by mongodb
+ * @validations don't toggle a slot if it is already booked
+ * @returns updated slot data
+ */
+const slotStatusToggleIntoDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    // check if slot is already booked, exists or not cancelled
+    const slot = yield slot_model_1.Slot.findById(id);
+    if (!slot) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "Slot not found!");
+    }
+    if ((slot === null || slot === void 0 ? void 0 : slot.isBooked) === booking_constant_1.BOOKING_TYPE.booked) {
+        throw new appError_1.default(http_status_1.default.BAD_REQUEST, "You can not delete this slot, as it is already booked!");
+    }
+    // make slot toggle data for database
+    const toggleStatus = (slot === null || slot === void 0 ? void 0 : slot.isBooked) === "available" ? "canceled" : "available";
+    const result = yield slot_model_1.Slot.findByIdAndUpdate(id, { isBooked: toggleStatus }, { new: true, runValidators: true });
     return result;
 });
 exports.SlotServices = {
     createSlotIntoDB,
     getAllSlotsFromDB,
+    getAllSlotsWithServiceFromDB,
     getAvailableSlotsFromDB,
     getSingleSlotFromDB,
     deleteSlotFromDB,
+    slotStatusToggleIntoDB,
 };

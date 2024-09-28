@@ -10,14 +10,10 @@ const service_controller_1 = require("./service.controller");
 const validateRequestData_1 = __importDefault(require("../../middlewares/validateRequestData"));
 const service_validation_1 = require("./service.validation");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
-const slot_validation_1 = require("../slot/slot.validation");
-const slot_controller_1 = require("../slot/slot.controller");
 const auth_constant_1 = require("../auth/auth.constant");
 const router = express_1.default.Router();
 // create a service
-router.post("/create-service", 
-// auth(USER_ROLE.admin),
-(0, validateRequestData_1.default)(service_validation_1.ServiceValidations.createServiceValidationSchema), service_controller_1.ServiceControllers.createService);
+router.post("/create-service", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(service_validation_1.ServiceValidations.createServiceValidationSchema), service_controller_1.ServiceControllers.createService);
 // get all Services
 router.get("/", service_controller_1.ServiceControllers.getAllServices);
 // get single Service
@@ -27,9 +23,6 @@ router.get("/service-slots/:id", service_controller_1.ServiceControllers.getServ
 // delete an Service
 router.delete("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), service_controller_1.ServiceControllers.deleteService);
 // update an Service
-router.put("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(service_validation_1.ServiceValidations.updateServiceValidationSchema), service_controller_1.ServiceControllers.updateService);
-router.post("/slots", 
-// auth(USER_ROLE.admin),
-(0, validateRequestData_1.default)(slot_validation_1.SlotValidations.createSlotValidationSchema), slot_controller_1.SlotControllers.createSlot);
+router.patch("/:id", (0, auth_1.default)(auth_constant_1.USER_ROLE.admin), (0, validateRequestData_1.default)(service_validation_1.ServiceValidations.updateServiceValidationSchema), service_controller_1.ServiceControllers.updateService);
 // export routes
 exports.serviceRoutes = router;

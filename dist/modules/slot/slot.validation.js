@@ -13,7 +13,7 @@ const timeFormatValidation = zod_1.default
     const result = /^([01]\d|2[0-3]):([0-5]\d)$/;
     return result.test(time);
 }, {
-    message: "time format must be HH:MM 24 hr format",
+    message: "time format must be HH:MM 24 hr format and less than 24:00",
 });
 // create slot validation schema
 const createSlotValidationSchema = zod_1.default.object({

@@ -91,7 +91,57 @@ const createSlotIntoDB = async (payload: TSlot) => {
  * @returns all slots as group with corresponding service details and total slots count.
  * also filter out those slots, those corresponding service isDeleted false
  */
-const getAllSlotsFromDB = async () => {
+const getAllSlotsFromDB = async (query: Record<string, unknown>) => {
+  // ------------ fields limitng
+  let projectFields: Record<string, 0 | 1> = {};
+  if (query.fields) {
+    const isExclusion = (query.fields as string).startsWith("-");
+    const fields = (query.fields as string).replace("-", "").split(",");
+
+    // --------- make project fields object
+    fields.forEach((field) => {
+      projectFields[field.trim()] = isExclusion ? 0 : 1;
+    });
+  } else {
+    projectFields = {
+      __v: 0,
+    };
+  }
+
+  const result = await Slot.aggregate([
+    {
+      $lookup: {
+        from: "services",
+        localField: "service",
+        foreignField: "_id",
+        as: "service",
+      },
+    },
+    // service array to object mapping
+    {
+      $unwind: "$service",
+    },
+    // again filter slots based on service isDeleted false
+    {
+      $match: {
+        "service.isDeleted": false,
+      },
+    },
+    // fields limiting
+    {
+      $project: projectFields,
+    },
+  ]);
+
+  return result;
+};
+
+/**
+ * ------------------ get all Slots with service from db ----------------
+ *
+ * @returns return all slots with corresponding service by making group.
+ */
+const getAllSlotsWithServiceFromDB = async () => {
   // group by service. each service details and total slots with count
   const result = await Slot.aggregate([
     {
@@ -126,16 +176,32 @@ const getAllSlotsFromDB = async () => {
  * @validation keep only slots, those service isDeleted false
  * @returns all the available slots with corresponding service details
  */
-const getAvailableSlotsFromDB = async (req: Record<string, unknown>) => {
+const getAvailableSlotsFromDB = async (query: Record<string, unknown>) => {
   // make query for exact matching slots
-  let query: any = { isBooked: BOOKING_TYPE.available };
-  if (req?.serviceId) query.service = req.serviceId;
-  if (req?.date) query.date = req.date;
+  let matchQuery: any = { isBooked: BOOKING_TYPE.available };
+  if (query?.serviceId) matchQuery.service = query.serviceId;
+  if (query?.date) matchQuery.date = query.date;
+
+  // ------------ fields limitng
+  let projectFields: Record<string, 0 | 1> = {};
+  if (query.fields) {
+    const isExclusion = (query.fields as string).startsWith("-");
+    const fields = (query.fields as string).replace("-", "").split(",");
+
+    // --------- make project fields object
+    fields.forEach((field) => {
+      projectFields[field.trim()] = isExclusion ? 0 : 1;
+    });
+  } else {
+    projectFields = {
+      __v: 0,
+    };
+  }
 
   const result = await Slot.aggregate([
     // exact matching slots
     {
-      $match: query,
+      $match: matchQuery,
     },
     // populate
     {
@@ -155,6 +221,10 @@ const getAvailableSlotsFromDB = async (req: Record<string, unknown>) => {
       $match: {
         "service.isDeleted": false,
       },
+    },
+    // fields limiting
+    {
+      $project: projectFields,
     },
   ]);
 
@@ -185,26 +255,72 @@ const getSingleSlotFromDB = async (id: string) => {
  *  ------------------ delete an Slot from db ----------------
  *
  * @param id slot id provided by mongodb
- * @validations don't delete a slot if it is already booked
+ * @validations don't delete a slot if it is already booked, also check when updating
  * @returns deleted slot
  */
 const deleteSlotFromDB = async (id: string) => {
   // check if slot is already booked
   const slot = await Slot.findById(id);
+  if (!slot) {
+    throw new AppError(httpStatus.FORBIDDEN, "Slot is not found");
+  }
   if (slot?.isBooked === BOOKING_TYPE.booked) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "You can not delete this slot, as it is already booked!"
     );
   }
-  const result = await Slot.findByIdAndDelete(id, { new: true });
+  const result = await Slot.findOneAndDelete({
+    _id: id,
+    isBooked: { $ne: BOOKING_TYPE.booked }, // ensure slot not booked
+  });
+
+  if (!result) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Slot is deleted or already booked"
+    );
+  }
+  return result;
+};
+
+/**
+ *  ------------------ toggle slot ----------------
+ *
+ * @param id slot id provided by mongodb
+ * @validations don't toggle a slot if it is already booked
+ * @returns updated slot data
+ */
+const slotStatusToggleIntoDB = async (id: string) => {
+  // check if slot is already booked, exists or not cancelled
+  const slot = await Slot.findById(id);
+  if (!slot) {
+    throw new AppError(httpStatus.NOT_FOUND, "Slot not found!");
+  }
+  if (slot?.isBooked === BOOKING_TYPE.booked) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "You can not delete this slot, as it is already booked!"
+    );
+  }
+  // make slot toggle data for database
+  const toggleStatus =
+    slot?.isBooked === "available" ? "canceled" : "available";
+
+  const result = await Slot.findByIdAndUpdate(
+    id,
+    { isBooked: toggleStatus },
+    { new: true, runValidators: true }
+  );
   return result;
 };
 
 export const SlotServices = {
   createSlotIntoDB,
   getAllSlotsFromDB,
+  getAllSlotsWithServiceFromDB,
   getAvailableSlotsFromDB,
   getSingleSlotFromDB,
   deleteSlotFromDB,
+  slotStatusToggleIntoDB,
 };

@@ -15,7 +15,7 @@ const router = express.Router();
 // create a service
 router.post(
   "/create-service",
-  // auth(USER_ROLE.admin),
+  auth(USER_ROLE.admin),
   validateRequest(ServiceValidations.createServiceValidationSchema),
   ServiceControllers.createService
 );
@@ -33,19 +33,13 @@ router.get("/service-slots/:id", ServiceControllers.getServiceWithSlots);
 router.delete("/:id", auth(USER_ROLE.admin), ServiceControllers.deleteService);
 
 // update an Service
-router.put(
+router.patch(
   "/:id",
   auth(USER_ROLE.admin),
   validateRequest(ServiceValidations.updateServiceValidationSchema),
   ServiceControllers.updateService
 );
 
-router.post(
-  "/slots",
-  // auth(USER_ROLE.admin),
-  validateRequest(SlotValidations.createSlotValidationSchema),
-  SlotControllers.createSlot
-);
 
 // export routes
 export const serviceRoutes = router;

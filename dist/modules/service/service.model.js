@@ -31,6 +31,7 @@ const serviceSchema = new mongoose_1.Schema({
     featured: {
         type: Boolean,
         required: true,
+        default: false,
     },
     serviceImgUrl: { type: String, required: true },
     isDeleted: {
