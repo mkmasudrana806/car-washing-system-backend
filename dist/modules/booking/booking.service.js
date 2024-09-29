@@ -225,12 +225,7 @@ const getAllBookingsFromDB = (query) => __awaiter(void 0, void 0, void 0, functi
  * @example fields liming: fields=-customer,service,slot means exclude them, as negative sign. it works nested fields limiting also. like fields=customer.name
  * @returns return user Bookings those are not deleted
  */
-const getUserBookingsFromDB = (email, query) => __awaiter(void 0, void 0, void 0, function* () {
-    // check if user exists
-    const user = yield user_model_1.User.isUserExistsByemail(email);
-    if (!user) {
-        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found");
-    }
+const getUserBookingsFromDB = (userId, query) => __awaiter(void 0, void 0, void 0, function* () {
     // search funcitonality
     const searchRegex = new RegExp(query.searchTerm, "i");
     // pagination
@@ -264,24 +259,24 @@ const getUserBookingsFromDB = (email, query) => __awaiter(void 0, void 0, void 0
             __v: 0,
         };
     }
-    // aggregation piepeline
-    const result = yield booking_model_1.Booking.aggregate([
+    // pipeline array
+    const pipeline = [
         // filter out those bookings is deleted true
         {
             $match: {
-                customer: user._id,
+                user: new mongoose_1.default.Types.ObjectId(userId),
                 isDeleted: false,
             },
         },
         {
             $lookup: {
                 from: "users", // Collection name where customers are stored
-                localField: "customer",
+                localField: "user",
                 foreignField: "_id",
-                as: "customer",
+                as: "user",
             },
         },
-        { $unwind: "$customer" }, // convert that customers array to object
+        { $unwind: "$user" }, // convert that customers array to object
         {
             $lookup: {
                 from: "services",
@@ -323,9 +318,6 @@ const getUserBookingsFromDB = (email, query) => __awaiter(void 0, void 0, void 0
             $skip: skip,
         },
         // limiting
-        {
-            $limit: limit,
-        },
         // sort the document
         {
             $sort: { [sortField]: sortOrder },
@@ -334,7 +326,14 @@ const getUserBookingsFromDB = (email, query) => __awaiter(void 0, void 0, void 0
         {
             $project: projectFields,
         },
-    ]);
+    ];
+    if (query === null || query === void 0 ? void 0 : query.limit) {
+        pipeline.push({
+            $limit: query === null || query === void 0 ? void 0 : query.limit,
+        });
+    }
+    // aggregation piepeline
+    const result = yield booking_model_1.Booking.aggregate(pipeline);
     return result;
 });
 /**

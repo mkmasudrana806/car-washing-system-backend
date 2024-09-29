@@ -238,15 +238,9 @@ const getAllBookingsFromDB = async (query: Record<string, unknown>) => {
  * @returns return user Bookings those are not deleted
  */
 const getUserBookingsFromDB = async (
-  email: string,
+  userId: string,
   query: Record<string, unknown>
 ) => {
-  // check if user exists
-  const user: any = await User.isUserExistsByemail(email);
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User is not found");
-  }
-
   // search funcitonality
   const searchRegex = new RegExp(query.searchTerm as string, "i");
 
@@ -284,24 +278,24 @@ const getUserBookingsFromDB = async (
     };
   }
 
-  // aggregation piepeline
-  const result = await Booking.aggregate([
+  // pipeline array
+  const pipeline: any[] = [
     // filter out those bookings is deleted true
     {
       $match: {
-        customer: user._id,
+        user: new mongoose.Types.ObjectId(userId),
         isDeleted: false,
       },
     },
     {
       $lookup: {
         from: "users", // Collection name where customers are stored
-        localField: "customer",
+        localField: "user",
         foreignField: "_id",
-        as: "customer",
+        as: "user",
       },
     },
-    { $unwind: "$customer" }, // convert that customers array to object
+    { $unwind: "$user" }, // convert that customers array to object
     {
       $lookup: {
         from: "services",
@@ -343,9 +337,7 @@ const getUserBookingsFromDB = async (
       $skip: skip,
     },
     // limiting
-    {
-      $limit: limit,
-    },
+
     // sort the document
     {
       $sort: { [sortField]: sortOrder },
@@ -354,7 +346,15 @@ const getUserBookingsFromDB = async (
     {
       $project: projectFields,
     },
-  ]);
+  ];
+
+  if (query?.limit) {
+    pipeline.push({
+      $limit: query?.limit,
+    });
+  }
+  // aggregation piepeline
+  const result = await Booking.aggregate(pipeline);
 
   return result;
 };
