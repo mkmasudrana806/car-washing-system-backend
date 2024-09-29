@@ -78,8 +78,18 @@ const changeUserStatusSchema = z.object({
   }),
 });
 
+// change user role schema
+const changeUserRoleSchema = z.object({
+  body: z.object({
+    role: z.enum(["user", "admin"], {
+      required_error: "User role is required",
+    }),
+  }),
+});
+
 export const UserValidations = {
   createUserValidationsSchema,
   updateUserValidationsSchema,
   changeUserStatusSchema,
+  changeUserRoleSchema,
 };

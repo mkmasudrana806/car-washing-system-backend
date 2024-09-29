@@ -34,5 +34,7 @@ router.delete("/:id", (0, auth_1.default)("admin"), user_controller_1.UserContro
 // update an user
 router.patch("/:id", (0, auth_1.default)("user", "admin"), (0, validateRequestData_1.default)(user_validation_1.UserValidations.updateUserValidationsSchema), user_controller_1.UserControllers.updateUser);
 // change user status
-router.post("/change-status/:id", (0, auth_1.default)("admin"), (0, validateRequestData_1.default)(user_validation_1.UserValidations.changeUserStatusSchema), user_controller_1.UserControllers.changeUserStatus);
+router.patch("/toggle-user-status/:id", (0, auth_1.default)("admin"), (0, validateRequestData_1.default)(user_validation_1.UserValidations.changeUserStatusSchema), user_controller_1.UserControllers.changeUserStatus);
+// change user role
+router.patch("/toggle-user-role/:id", (0, auth_1.default)("admin"), (0, validateRequestData_1.default)(user_validation_1.UserValidations.changeUserRoleSchema), user_controller_1.UserControllers.changeUserRole);
 exports.UserRoutes = router;

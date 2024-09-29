@@ -53,7 +53,7 @@ const createAnUserIntoDB = async (file: TfileUpload, payload: TUser) => {
  * @return return all users
  */
 const getAllUsersFromDB = async (query: Record<string, any>) => {
-  const userQuery = new QueryBuilder(User.find(), query)
+  const userQuery = new QueryBuilder(User.find({ isDeleted: false }), query)
     .search(searchableFields)
     .filter()
     .sort()
@@ -139,20 +139,61 @@ const updateUserIntoDB = async (
  * @param id user id
  * @param payload user status payload
  * @validatios check if the user exists,not deleted. only admin can change user status
- * @note admin can not change own status. admin can change only user status
+ * @validations main admin can't change own status
  * @returns return updated user status
  */
 const changeUserStatusIntoDB = async (
   id: string,
   payload: { status: string }
 ) => {
-  // check if user exists, not deleted. find user that has role as user
-  const user = await User.findOne({ _id: id, role: "user" });
+  // check if user exists, not deleted
+  const user = await User.findOne({ _id: id });
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
   }
   if (user.isDeleted) {
     throw new AppError(httpStatus.FORBIDDEN, "User is already deleted!");
+  }
+  // check the user is not main admin
+  if (user.email === "admin@gmail.com") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are main admin, can't change your status"
+    );
+  }
+
+  const result = await User.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  });
+  return result;
+};
+
+/**
+ * -------------------- change user role ----------------------
+ * @param id user id
+ * @param payload user role payload
+ * @validatios check if the user exists,not deleted. only admin can change user role
+ * @note admin can not change own role. admin can change only user role
+ *  @validations main admin can't change own status
+ * @returns return updated user data
+ */
+const changeUserRoleIntoDB = async (id: string, payload: { role: string }) => {
+  // check if user exists, not deleted. find user that has role as user
+  const user = await User.findOne({ _id: id });
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User is not found!");
+  }
+  if (user.isDeleted) {
+    throw new AppError(httpStatus.FORBIDDEN, "User is already deleted!");
+  }
+
+  // check the user is not main admin
+  if (user.email === "admin@gmail.com") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are main admin, can't change role!"
+    );
   }
 
   const result = await User.findByIdAndUpdate(id, payload, {
@@ -169,4 +210,5 @@ export const UserServices = {
   deleteUserFromDB,
   updateUserIntoDB,
   changeUserStatusIntoDB,
+  changeUserRoleIntoDB,
 };

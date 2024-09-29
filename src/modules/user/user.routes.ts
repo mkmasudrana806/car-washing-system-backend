@@ -44,11 +44,19 @@ router.patch(
 );
 
 // change user status
-router.post(
-  "/change-status/:id",
+router.patch(
+  "/toggle-user-status/:id",
   auth("admin"),
   validateRequest(UserValidations.changeUserStatusSchema),
   UserControllers.changeUserStatus
+);
+
+// change user role
+router.patch(
+  "/toggle-user-role/:id",
+  auth("admin"),
+  validateRequest(UserValidations.changeUserRoleSchema),
+  UserControllers.changeUserRole
 );
 
 export const UserRoutes = router;

@@ -78,8 +78,17 @@ const changeUserStatusSchema = zod_1.default.object({
         }),
     }),
 });
+// change user role schema
+const changeUserRoleSchema = zod_1.default.object({
+    body: zod_1.default.object({
+        role: zod_1.default.enum(["user", "admin"], {
+            required_error: "User role is required",
+        }),
+    }),
+});
 exports.UserValidations = {
     createUserValidationsSchema,
     updateUserValidationsSchema,
     changeUserStatusSchema,
+    changeUserRoleSchema,
 };

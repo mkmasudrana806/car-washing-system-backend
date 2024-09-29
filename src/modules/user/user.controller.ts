@@ -89,6 +89,21 @@ const changeUserStatus = catchAsync(async (req, res, next) => {
   });
 });
 
+// ------------------- change user role -------------------
+const changeUserRole = catchAsync(async (req, res, next) => {
+  const result = await UserServices.changeUserRoleIntoDB(
+    req.params.id,
+    req.body
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User role  changed successfully",
+    data: result,
+  });
+});
+
 export const UserControllers = {
   createAnUser,
   getAllUsers,
@@ -96,4 +111,5 @@ export const UserControllers = {
   deleteUser,
   updateUser,
   changeUserStatus,
+  changeUserRole,
 };

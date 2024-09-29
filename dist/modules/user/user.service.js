@@ -55,7 +55,7 @@ const createAnUserIntoDB = (file, payload) => __awaiter(void 0, void 0, void 0, 
  * @return return all users
  */
 const getAllUsersFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const userQuery = new QueryBuilder_1.default(user_model_1.User.find(), query)
+    const userQuery = new QueryBuilder_1.default(user_model_1.User.find({ isDeleted: false }), query)
         .search(user_constant_1.searchableFields)
         .filter()
         .sort()
@@ -123,17 +123,49 @@ const updateUserIntoDB = (currentUser, id, payload) => __awaiter(void 0, void 0,
  * @param id user id
  * @param payload user status payload
  * @validatios check if the user exists,not deleted. only admin can change user status
- * @note admin can not change own status. admin can change only user status
+ * @validations main admin can't change own status
  * @returns return updated user status
  */
 const changeUserStatusIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    // check if user exists, not deleted. find user that has role as user
-    const user = yield user_model_1.User.findOne({ _id: id, role: "user" });
+    // check if user exists, not deleted
+    const user = yield user_model_1.User.findOne({ _id: id });
     if (!user) {
         throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
     }
     if (user.isDeleted) {
         throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+    }
+    // check the user is not main admin
+    if (user.email === "admin@gmail.com") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "You are main admin, can't change your status");
+    }
+    const result = yield user_model_1.User.findByIdAndUpdate(id, payload, {
+        new: true,
+        runValidators: true,
+    });
+    return result;
+});
+/**
+ * -------------------- change user role ----------------------
+ * @param id user id
+ * @param payload user role payload
+ * @validatios check if the user exists,not deleted. only admin can change user role
+ * @note admin can not change own role. admin can change only user role
+ *  @validations main admin can't change own status
+ * @returns return updated user data
+ */
+const changeUserRoleIntoDB = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    // check if user exists, not deleted. find user that has role as user
+    const user = yield user_model_1.User.findOne({ _id: id });
+    if (!user) {
+        throw new appError_1.default(http_status_1.default.NOT_FOUND, "User is not found!");
+    }
+    if (user.isDeleted) {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "User is already deleted!");
+    }
+    // check the user is not main admin
+    if (user.email === "admin@gmail.com") {
+        throw new appError_1.default(http_status_1.default.FORBIDDEN, "You are main admin, can't change role!");
     }
     const result = yield user_model_1.User.findByIdAndUpdate(id, payload, {
         new: true,
@@ -148,4 +180,5 @@ exports.UserServices = {
     deleteUserFromDB,
     updateUserIntoDB,
     changeUserStatusIntoDB,
+    changeUserRoleIntoDB,
 };

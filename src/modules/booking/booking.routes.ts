@@ -21,7 +21,7 @@ router.post(
 );
 
 // get all Bookings
-router.get("/",   BookingControllers.getAllBookings);
+router.get("/", auth("admin"), BookingControllers.getAllBookings);
 
 // get single Booking
 router.get(
